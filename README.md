@@ -19,7 +19,19 @@
 Sources go in [src/](src/), header files in [include/](include/), main programs in [app/](app), and
 tests go in [tests/](tests/) (compiled to `unit_tests` by default).
 
-## Building
+## Building w/ Visual Studio Code (+devcontainer)
+Navigate to base directory and open with VSCode:
+``` bash
+> cd openschema_postgres_utils
+> code .
+```
+Use `Ctrl+Shift+P` and `Remote-Container: Reopen in Container`.
+
+Build the project using the CMake extension using `Ctrl+Shift+P` and `CMake: Build`.
+
+The example can be launched using the Run (and debug) target `debug main`.
+
+## Building w/o VSCode
 
 Build by making a build directory (i.e. `build/`), run `cmake` in that dir, and then use `make` to build the desired target.
 
