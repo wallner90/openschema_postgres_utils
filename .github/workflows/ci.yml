@@ -37,6 +37,9 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v2
 
+    - name: Install deps (boost, lcov, doxygen)
+      run: sudo apt-get install -y libboost-all-dev lcov doxygen
+
     - name: Configure (${{ matrix.configuration }})
       run: cmake -S . -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
 
