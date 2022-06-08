@@ -1,0 +1,6 @@
+[submodule "thirdparty/oatpp"]
+	path = thirdparty/oatpp
+	url = https://github.com/oatpp/oatpp.git
+[submodule "thirdparty/oatpp-postgresql"]
+	path = thirdparty/oatpp-postgresql
+	url = https://github.com/oatpp/oatpp-postgresql.git

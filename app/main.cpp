@@ -12,12 +12,61 @@
 #include "exampleConfig.h"
 #include "postgres_utils.h"
 
+// #include "db/UserDto.hpp"
+// #include "oatpp/parser/json/mapping/ObjectMapper.hpp"
+
+// #include "component/AppComponent.hpp"
+
 /*
  * Simple main program that demontrates how access
  * CMake definitions (here the version number) from source code.
  */
 int main()
 {
+  // /* create user */
+  // auto user = User::createShared();
+  // user->name = "Ivan";
+  // user->surname = "Ovsyanochka";
+  // user->age = 24;
+  // user->familyMembers = {};   // Initialize empty map.
+  // user->additionalNotes = {}; // Initialize empty map.
+
+  // /* create user */
+  // auto brother = User::createShared();
+  // brother->name = "Yuriy";
+  // brother->surname = "Ovsyanochka";
+  // brother->age = 30;
+
+  // /* create user */
+  // auto sister = User::createShared();
+  // sister->name = "Kate";
+  // sister->surname = "Ovsyanochka";
+  // sister->age = 20;
+
+  // /* create list of siblings */
+  // oatpp::List<oatpp::Object<User>> siblings = {brother, sister};
+
+  // user->familyMembers->push_back({"siblings", siblings});
+  // user->additionalNotes->push_back({"Education", "Master of Computer Science"});
+
+
+  // auto serializeConfig = oatpp::parser::json::mapping::Serializer::Config::createShared();
+  // auto deserializeConfig = oatpp::parser::json::mapping::Deserializer::Config::createShared();
+  // serializeConfig->useBeautifier = true;
+
+  // /* create json ObjectMapper with default configs */
+  // auto jsonObjectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared(serializeConfig, deserializeConfig);
+
+  // oatpp::String json = jsonObjectMapper->writeToString(user);
+  // //OATPP_LOGD("json", "value='%s'", json->c_str()); ///< print json
+  // std::cout << json->c_str() << std::endl;
+
+
+
+
+
+
+
   std::cout << "### PostgreSQL Utils demo v"
             << PROJECT_VERSION_MAJOR
             << "."

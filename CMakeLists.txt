@@ -32,6 +32,8 @@ include(Misc)
 include(Warnings)
 
 find_package(Boost REQUIRED)
+find_package(oatpp              1.3.0 REQUIRED)
+find_package(oatpp-postgresql   1.3.0 REQUIRED)
 
 # Check for LTO support.
 find_lto(CXX)
@@ -57,7 +59,12 @@ add_library(${LIBRARY_NAME} OBJECT ${SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS})
 
 # There's also (probably) doctests within the library, so we need to see this as well.
-target_link_libraries(${LIBRARY_NAME} PUBLIC doctest ${Boost_LIBRARIES})
+target_link_libraries(${LIBRARY_NAME} PUBLIC 
+    doctest 
+    ${Boost_LIBRARIES}
+    oatpp::oatpp
+    oatpp::oatpp-postgresql
+)
 
 # Set the compile options you want (change as needed).
 target_set_warnings(${LIBRARY_NAME} ENABLE ALL AS_ERROR ALL DISABLE Annoying)
