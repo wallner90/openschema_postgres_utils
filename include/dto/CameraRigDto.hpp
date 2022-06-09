@@ -16,9 +16,9 @@ class CameraRigDto : public oatpp::DTO {
 
   DTO_FIELD(String, id);
   DTO_FIELD(String, description, "a Camera Rig");
-  DTO_FIELD(List<Object<CameraDto>>,
-            cameras);  // a camera rig has a list of cameras - is this the right
-                       // way to encode that?
+  // DTO_FIELD(List<Object<CameraDto>>,
+  //           cameras);  // a camera rig has a list of cameras - is this the right
+  //                      // way to encode that?
 };
 
 #include OATPP_CODEGEN_END(DTO)

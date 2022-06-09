@@ -2,6 +2,7 @@
 #define EXAMPLE_POSTGRESQL_OpenSchemaDb_HPP
 
 #include "dto/UserDto.hpp"
+#include "dto/CameraRigDto.hpp"
 #include "oatpp-postgresql/orm.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DbClient)  //<- Begin Codegen
@@ -24,8 +25,22 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     auto version = executor->getSchemaVersion();
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
   }
-  
-  
+
+//   QUERY(createCameraRig,
+//         "INSERT INTO camera_rig"
+//         "(description) VALUES "
+//         "(:camera_rig.description)"
+//         "RETURNING *;",
+//         PREPARE(true),
+//         PARAM(oatpp::Object<CameraRigDto>, camera_rig))
+
+  QUERY(createCameraRig,
+        "INSERT INTO camera_rig"
+        "(description) VALUES "
+        "(camera_rig_description)"
+        "RETURNING *;",
+        PREPARE(true),
+        PARAM(oatpp::String, camera_rig_description))
 
   QUERY(createUser,
         "INSERT INTO AppUser"

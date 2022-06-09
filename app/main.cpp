@@ -24,49 +24,54 @@ int main() {
   OATPP_COMPONENT(std::shared_ptr<OpenSchemaDb>,
                   m_database);  // Inject database component
 
-  auto new_user = oatpp::Object<UserDto>::createShared();
-  new_user->email = "test@test.com";
-  new_user->userName = "testUser123";
-  new_user->password = "password123";
-  new_user->role = Role::ADMIN;
-  m_database->createUser(new_user);
+  auto new_camera_rig = oatpp::Object<CameraRigDto>::createShared();
+  new_camera_rig->description = std::string("TestRigFromCode");
+  m_database->createCameraRig("TestDescriptionFromString");
 
-  std::string queryID;
 
-  auto dbResult = m_database->getAllUsers(0u, 100);
+  // auto new_user = oatpp::Object<UserDto>::createShared();
+  // new_user->email = "test@test.com";
+  // new_user->userName = "testUser123";
+  // new_user->password = "password123";
+  // new_user->role = Role::ADMIN;
+  // m_database->createUser(new_user);
 
-  if (dbResult->isSuccess()) {
-    auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
+  // std::string queryID;
 
-    std::cout << "THERE ARE " << result->size() << " USER ENTRIES IN THE DB"
-              << std::endl;
+  // auto dbResult = m_database->getAllUsers(0u, 100);
 
-    for (auto user : *result) {
-      oatpp::String json = jsonObjectMapper->writeToString(user);
-      std::cout << json->c_str() << std::endl;
+  // if (dbResult->isSuccess()) {
+  //   auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
 
-      queryID = user->id;
-    }
+  //   std::cout << "THERE ARE " << result->size() << " USER ENTRIES IN THE DB"
+  //             << std::endl;
 
-  } else {
-    std::cout << "COULD NOT QUERY DB!" << std::endl;
-  }
+  //   for (auto user : *result) {
+  //     oatpp::String json = jsonObjectMapper->writeToString(user);
+  //     std::cout << json->c_str() << std::endl;
 
-  dbResult = m_database->getUserById(queryID);
+  //     queryID = user->id;
+  //   }
 
-  if (dbResult->isSuccess()) {
-    auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
+  // } else {
+  //   std::cout << "COULD NOT QUERY DB!" << std::endl;
+  // }
 
-    std::cout << "QUERY FOR " << queryID << " RETURNED " << result->size()
-              << " MATCHES" << std::endl;
+  // dbResult = m_database->getUserById(queryID);
 
-    for (auto user : *result) {
-      oatpp::String json = jsonObjectMapper->writeToString(user);
-      std::cout << json->c_str() << std::endl;
-    }
-  } else {
-    std::cout << "COULD NOT QUERY DB!" << std::endl;
-  }
+  // if (dbResult->isSuccess()) {
+  //   auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
 
-  return 0;
+  //   std::cout << "QUERY FOR " << queryID << " RETURNED " << result->size()
+  //             << " MATCHES" << std::endl;
+
+  //   for (auto user : *result) {
+  //     oatpp::String json = jsonObjectMapper->writeToString(user);
+  //     std::cout << json->c_str() << std::endl;
+  //   }
+  // } else {
+  //   std::cout << "COULD NOT QUERY DB!" << std::endl;
+  // }
+
+  // return 0;
 }
