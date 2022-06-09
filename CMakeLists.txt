@@ -43,7 +43,7 @@ find_lto(CXX)
 # --------------------------------------------------------------------------------
 set(SOURCES          # All .cpp files in src/
     src/postgres_utils.cpp
-)
+        include/dto/SensorDto.hpp include/dto/ImuDto.hpp include/dto/CameraDto.hpp include/dto/CameraRigDto.hpp include/dto/SensorTypes.hpp)
 set(TESTFILES        # All .cpp files in tests/
     tests/main.cpp
 )
