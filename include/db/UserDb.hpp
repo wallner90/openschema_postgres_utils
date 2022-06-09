@@ -17,7 +17,7 @@ public:
   {
 
     oatpp::orm::SchemaMigration migration(executor);
-    migration.addFile(1 /* start from version 1 */, DATABASE_MIGRATIONS "/001_init.sql");
+    migration.addFile(1 /* start from version 1 */, "/workspaces/openschema_postgres_utils/sql/001_init.sql");
     // TODO - Add more migrations here.
     migration.migrate(); // <-- run migrations. This guy will throw on error.
 
