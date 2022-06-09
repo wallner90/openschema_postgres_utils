@@ -25,9 +25,19 @@ int main()
   auto dbResult = m_database->getUserById("f400368f-1762-48f9-a8e1-2293d6298016");
   auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
   auto user = result[0];
+  auto role = user->role;
   std::cout << "E-Mail: " << *(user->email) << std::endl;
 
-  return;
+
+  auto new_user = oatpp::Object<UserDto>::createShared();
+  new_user->email = "test@test.com";
+  new_user->userName = "testUser123";
+  new_user->password = "password123";
+  new_user->role = Role::ADMIN;
+  m_database->createUser(new_user);
+
+
+  return 0;
 
 
  
