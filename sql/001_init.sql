@@ -52,8 +52,8 @@ ALTER TABLE public.sensor OWNER TO postgres;
 -- DROP TABLE IF EXISTS public.camera CASCADE;
 CREATE TABLE IF NOT EXISTS public.camera (
 	sensor_id uuid NOT NULL DEFAULT uuid_generate_v4(),
-	camera_id uuid NOT NULL DEFAULT uuid_generate_v4(),
-	camera_rig_id_camera_rig uuid,
+	camera_id character varying NOT NULL DEFAULT uuid_generate_v4(),
+	camera_rig_id_camera_rig character varying,
 -- 	topic character varying,
 -- 	description character varying,
 	CONSTRAINT camera_pk PRIMARY KEY (camera_id,sensor_id)
@@ -66,7 +66,7 @@ ALTER TABLE public.camera OWNER TO postgres;
 -- object: public.camera_rig | type: TABLE --
 -- DROP TABLE IF EXISTS public.camera_rig CASCADE;
 CREATE TABLE IF NOT EXISTS public.camera_rig (
-	camera_rig_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+	camera_rig_id character varying NOT NULL DEFAULT uuid_generate_v4(),
 	description character varying,
 	CONSTRAINT camera_rig_pk PRIMARY KEY (camera_rig_id)
 );

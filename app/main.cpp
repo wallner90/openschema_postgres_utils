@@ -26,52 +26,23 @@ int main() {
 
   auto new_camera_rig = oatpp::Object<CameraRigDto>::createShared();
   new_camera_rig->description = std::string("TestRigFromCode");
-  m_database->createCameraRig("TestDescriptionFromString");
+  //m_database->createCameraRig("TestDescriptionFromString");
 
+  m_database->createCameraRig(new_camera_rig);
 
-  // auto new_user = oatpp::Object<UserDto>::createShared();
-  // new_user->email = "test@test.com";
-  // new_user->userName = "testUser123";
-  // new_user->password = "password123";
-  // new_user->role = Role::ADMIN;
-  // m_database->createUser(new_user);
+  auto dbResult = m_database->getAllCameraRigs(0u, 100u);
+  if (dbResult->isSuccess()) {
+      auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<CameraRigDto>>>();
 
-  // std::string queryID;
+      std::cout << "THERE ARE " << result->size() << " CAMERA RIG ENTRIES IN THE DB" << std::endl;
 
-  // auto dbResult = m_database->getAllUsers(0u, 100);
+      for (auto camera_rig: *result) {
+          oatpp::String json = jsonObjectMapper->writeToString(camera_rig);
+          std::cout << json->c_str() << std::endl;
+      }
+  } else {
+      std::cout << "COULD NOT QUERY ALL CAMERA RIGS!" << std::endl;
+  }
 
-  // if (dbResult->isSuccess()) {
-  //   auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-
-  //   std::cout << "THERE ARE " << result->size() << " USER ENTRIES IN THE DB"
-  //             << std::endl;
-
-  //   for (auto user : *result) {
-  //     oatpp::String json = jsonObjectMapper->writeToString(user);
-  //     std::cout << json->c_str() << std::endl;
-
-  //     queryID = user->id;
-  //   }
-
-  // } else {
-  //   std::cout << "COULD NOT QUERY DB!" << std::endl;
-  // }
-
-  // dbResult = m_database->getUserById(queryID);
-
-  // if (dbResult->isSuccess()) {
-  //   auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-
-  //   std::cout << "QUERY FOR " << queryID << " RETURNED " << result->size()
-  //             << " MATCHES" << std::endl;
-
-  //   for (auto user : *result) {
-  //     oatpp::String json = jsonObjectMapper->writeToString(user);
-  //     std::cout << json->c_str() << std::endl;
-  //   }
-  // } else {
-  //   std::cout << "COULD NOT QUERY DB!" << std::endl;
-  // }
-
-  // return 0;
+  return 0;
 }

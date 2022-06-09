@@ -16,7 +16,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
       : oatpp::orm::DbClient(executor) {
     oatpp::orm::SchemaMigration migration(executor);
     migration.addFile(1 /* start from version 1 */,
-                      "/workspaces/openschema_postgres_utils/sql/001_init.sql");
+                      "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/001_init.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
     // TODO - Add more migrations here.
@@ -26,21 +26,26 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
   }
 
-//   QUERY(createCameraRig,
-//         "INSERT INTO camera_rig"
-//         "(description) VALUES "
-//         "(:camera_rig.description)"
-//         "RETURNING *;",
-//         PREPARE(true),
-//         PARAM(oatpp::Object<CameraRigDto>, camera_rig))
+   QUERY(createCameraRig,
+         "INSERT INTO camera_rig"
+         "(description) VALUES "
+         "(:camera_rig.description)"
+         "RETURNING *;",
+         PREPARE(true),
+         PARAM(oatpp::Object<CameraRigDto>, camera_rig))
 
-  QUERY(createCameraRig,
-        "INSERT INTO camera_rig"
-        "(description) VALUES "
-        "(camera_rig_description)"
-        "RETURNING *;",
-        PREPARE(true),
-        PARAM(oatpp::String, camera_rig_description))
+    QUERY(getAllCameraRigs, "SELECT * FROM camera_rig LIMIT :limit OFFSET :offset;",
+          PREPARE(true),  //<-- user prepared statement!
+          PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
+
+
+    //QUERY(createCameraRig,
+  //      "INSERT INTO camera_rig"
+  //      "(description) VALUES "
+  //      "(camera_rig_description)"
+  //      "RETURNING *;",
+  //      PREPARE(true),
+  //      PARAM(oatpp::String, camera_rig_description))
 
   QUERY(createUser,
         "INSERT INTO AppUser"

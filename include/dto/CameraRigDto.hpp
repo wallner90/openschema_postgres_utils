@@ -14,10 +14,9 @@
 class CameraRigDto : public oatpp::DTO {
   DTO_INIT(CameraRigDto, oatpp::DTO)
 
-  DTO_FIELD(String, id);
-  DTO_FIELD(String, description, "description") = "A Camera Rig";
-  // DTO_FIELD(List<Object<CameraDto>>,
-  //           cameras);  // a camera rig has a list of cameras - is this the right
+  DTO_FIELD(String, camera_rig_id, "camera_rig_id");
+  DTO_FIELD(String, description, "description");
+  // DTO_FIELD(List<Object<CameraDto>>,  cameras);  // a camera rig has a list of cameras - is this the right
   //                      // way to encode that?
 };
 
