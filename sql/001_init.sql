@@ -9,6 +9,3 @@ CREATE TABLE IF NOT EXISTS AppUser (
     CONSTRAINT              UK_APPUSER_USERNAME UNIQUE (username),
     CONSTRAINT              UK_APPUSER_EMAIL UNIQUE (email)
 );
-
-INSERT INTO AppUser
-(id, username, email, password, role) VALUES (uuid_generate_v4(), 'admin', 'admin@domain.com', 'admin', 'ROLE_ADMIN');
