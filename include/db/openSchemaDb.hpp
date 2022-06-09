@@ -24,6 +24,8 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     auto version = executor->getSchemaVersion();
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
   }
+  
+  
 
   QUERY(createUser,
         "INSERT INTO AppUser"
