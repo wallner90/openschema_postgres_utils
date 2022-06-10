@@ -3,6 +3,8 @@
 
 #include "dto/UserDto.hpp"
 #include "dto/CameraRigDto.hpp"
+#include "dto/ImuDto.hpp"
+#include "dto/PoseGraphDto.hpp"
 #include "oatpp-postgresql/orm.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DbClient)  //<- Begin Codegen
@@ -16,7 +18,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
       : oatpp::orm::DbClient(executor) {
     oatpp::orm::SchemaMigration migration(executor);
     migration.addFile(1 /* start from version 1 */,
-                      "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/001_init.sql");
+                      "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
     // TODO - Add more migrations here.
@@ -26,7 +28,26 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
   }
 
-   QUERY(createCameraRig,
+  // create a posegraph with a specific base sensor
+  QUERY(createPosegraph,
+        "INSERT INTO pose_graph (description, base_sensor) VALUES (:pose_graph.description, :base_sensor.id) RETURNING *;",
+        PREPARE(true),
+        PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<SensorDto>, base_sensor))
+
+  // create an IMU that is also a sensor
+  QUERY(createIMU,
+        "INSERT INTO imu"
+        "(description) VALUES "
+        "(:imu.description)"
+        "RETURNING *;"
+        "INSERT INTO sensor"
+        "(description) VALUES "
+        "(:imu.description)"
+        "RETURNING *;",
+        PREPARE(true),
+        PARAM(oatpp::Object<ImuDto>, imu))
+
+  QUERY(createCameraRig,
          "INSERT INTO camera_rig"
          "(description) VALUES "
          "(:camera_rig.description)"
@@ -34,7 +55,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
          PREPARE(true),
          PARAM(oatpp::Object<CameraRigDto>, camera_rig))
 
-    QUERY(getAllCameraRigs, "SELECT * FROM camera_rig LIMIT :limit OFFSET :offset;",
+  QUERY(getAllCameraRigs, "SELECT * FROM camera_rig LIMIT :limit OFFSET :offset;",
           PREPARE(true),  //<-- user prepared statement!
           PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
 

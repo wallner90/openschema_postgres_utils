@@ -24,6 +24,32 @@ int main() {
   OATPP_COMPONENT(std::shared_ptr<OpenSchemaDb>,
                   m_database);  // Inject database component
 
+  // create an IMU to serve as base sensor for the posegraph
+  auto imu = oatpp::Object<ImuDto>::createShared();
+  imu->description = "an imu";
+
+  // add imu to DB
+  m_database->createIMU(imu);
+
+    // create empty posegraph
+  auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
+  main_pose_graph->description = "the main posegraph";
+  main_pose_graph->base_sensor = imu;
+
+  // add pose graph to DB
+  m_database->createPosegraph(main_pose_graph, main_pose_graph->base_sensor);
+
+  // add a couple of vertices, with edges between consecutive ones
+  int numVerts = 10;
+  for (int i=0; i<numVerts; i++) {
+    std::cout << "adding vertex #" << i << std::endl;
+    if (i>0) {
+        std::cout << "adding edge between vertex #" << i-1 << " and #" << i << std::endl;
+    }
+  }
+
+  return 0;
+
   auto new_camera_rig = oatpp::Object<CameraRigDto>::createShared();
   new_camera_rig->description = std::string("TestRigFromCode");
   //m_database->createCameraRig("TestDescriptionFromString");
