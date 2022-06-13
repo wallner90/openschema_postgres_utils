@@ -1,10 +1,10 @@
 #ifndef EXAMPLE_POSTGRESQL_OpenSchemaDb_HPP
 #define EXAMPLE_POSTGRESQL_OpenSchemaDb_HPP
 
-#include "dto/UserDto.hpp"
 #include "dto/CameraRigDto.hpp"
 #include "dto/ImuDto.hpp"
 #include "dto/PoseGraphDto.hpp"
+#include "dto/UserDto.hpp"
 #include "dto/VertexDto.hpp"
 #include "oatpp-postgresql/orm.hpp"
 #include "types/Point.hpp"
@@ -20,7 +20,8 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
       : oatpp::orm::DbClient(executor) {
     oatpp::orm::SchemaMigration migration(executor);
     migration.addFile(1 /* start from version 1 */,
-                      "/workspaces/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
+                      "/workspaces/openschema_postgres_utils/sql/"
+                      "db_schema_postGIS_fixed.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
     // TODO - Add more migrations here.
@@ -28,7 +29,6 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
     auto version = executor->getSchemaVersion();
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
-
   }
 
   // create a posegraph with a specific base sensor
@@ -37,16 +37,17 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         "(posegraph_id, description, base_sensor) "
         "VALUES (uuid_generate_v4(), :pose_graph.description, :base_sensor.id) "
         "RETURNING *;",
-        PREPARE(true),
-        PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<SensorDto>, base_sensor))
+        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, pose_graph),
+        PARAM(oatpp::Object<SensorDto>, base_sensor))
 
   // create a vertex
   QUERY(createVertex,
         "INSERT INTO vertex (position, posegraph_id_posegraph) "
         "VALUES "
-        "(ST_GeomFromText(:vertex.position, 4326), :pose_graph.posegraph_id) RETURNING *;",
-        PREPARE(true),
-        PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<VertexDto>, vertex))
+        "(ST_GeomFromText(:vertex.position, 4326), :pose_graph.posegraph_id) "
+        "RETURNING *;",
+        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, pose_graph),
+        PARAM(oatpp::Object<VertexDto>, vertex))
 
   // create an IMU that is also a sensor
   QUERY(createIMU,
@@ -58,21 +59,19 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         "(description) VALUES "
         "(:imu.description)"
         "RETURNING *;",
-        PREPARE(true),
-        PARAM(oatpp::Object<ImuDto>, imu))
+        PREPARE(true), PARAM(oatpp::Object<ImuDto>, imu))
 
   QUERY(createCameraRig,
-         "INSERT INTO camera_rig"
-         "(camera_rig_id, description) VALUES "
-         "uuid_generate_v4(), (:camera_rig.description)"
-         "RETURNING *;",
-         PREPARE(true),
-         PARAM(oatpp::Object<CameraRigDto>, camera_rig))
+        "INSERT INTO camera_rig"
+        "(camera_rig_id, description) VALUES "
+        "uuid_generate_v4(), (:camera_rig.description)"
+        "RETURNING *;",
+        PREPARE(true), PARAM(oatpp::Object<CameraRigDto>, camera_rig))
 
-  QUERY(getAllCameraRigs, "SELECT * FROM camera_rig LIMIT :limit OFFSET :offset;",
-          PREPARE(true),  //<-- user prepared statement!
-          PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
-
+  QUERY(getAllCameraRigs,
+        "SELECT * FROM camera_rig LIMIT :limit OFFSET :offset;",
+        PREPARE(true),  //<-- user prepared statement!
+        PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
 
   QUERY(createUser,
         "INSERT INTO AppUser"
@@ -100,13 +99,11 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         PREPARE(true),  //<-- user prepared statement!
         PARAM(oatpp::postgresql::mapping::type::Uuid, id))
 
-//   QUERY(getAllUsers, "SELECT * FROM AppUser LIMIT :limit OFFSET :offset;",
-//         PREPARE(true),  //<-- user prepared statement!
-//         PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
+  //   QUERY(getAllUsers, "SELECT * FROM AppUser LIMIT :limit OFFSET :offset;",
+  //         PREPARE(true),  //<-- user prepared statement!
+  //         PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
 
-  QUERY(getAllUsers, "SELECT * FROM AppUser;",
-        PREPARE(true))
-
+  QUERY(getAllUsers, "SELECT * FROM AppUser;", PREPARE(true))
 
   QUERY(deleteUserById, "DELETE FROM AppUser WHERE id=:id;",
         PREPARE(true),  //<-- user prepared statement!

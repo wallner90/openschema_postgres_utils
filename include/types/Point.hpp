@@ -25,94 +25,102 @@
 #ifndef oatpp_postgresql_mapping_type_point_hpp
 #define oatpp_postgresql_mapping_type_point_hpp
 
-#include "oatpp/core/Types.hpp"
 #include <iostream>
 
-namespace oatpp { namespace postgresql { namespace mapping { namespace type {
+#include "oatpp/core/Types.hpp"
 
-                namespace __class {
-                    class Point;
-                }
+namespace oatpp {
+namespace postgresql {
+namespace mapping {
+namespace type {
 
-                struct VPoint {
-                    v_float32 x;
-                    v_float32 y;
-                    //v_float32 z;
-                };
+namespace __class {
+class Point;
+}
 
-                class PointObject {
-                public:
-                private:
-                    VPoint pt;
-                public:
-                    /**
-                    * Constructor.
-                    * @param text
-                    */
-                    PointObject();
+struct VPoint {
+  v_float32 x;
+  v_float32 y;
+  // v_float32 z;
+};
 
-                    /**
-                     * Constructor.
-                     * @param data
-                     */
-                    PointObject(v_float32 x, v_float32 y);
+class PointObject {
+ public:
+ private:
+  VPoint pt;
 
-                    /**
-                     * Get raw data of ObjectId.
-                     * @return
-                     */
-                    const VPoint getData() const;
+ public:
+  /**
+   * Constructor.
+   * @param text
+   */
+  PointObject();
 
-                    /**
-                     * Get size of ObjectId data.
-                     * @return - &l:ObjectId::DATA_SIZE;.
-                     */
-                    // v_buff_size getSize() const;
+  /**
+   * Constructor.
+   * @param data
+   */
+  PointObject(v_float32 x, v_float32 y);
 
-                    /**
-                     * To hex string.
-                     * @return
-                     */
-                    oatpp::String toString() const;
+  /**
+   * Get raw data of ObjectId.
+   * @return
+   */
+  const VPoint getData() const;
 
-                    bool operator==(const PointObject &other) const;
-                    bool operator!=(const PointObject &other) const;
+  /**
+   * Get size of ObjectId data.
+   * @return - &l:ObjectId::DATA_SIZE;.
+   */
+  // v_buff_size getSize() const;
 
-                };
+  /**
+   * To hex string.
+   * @return
+   */
+  oatpp::String toString() const;
+
+  bool operator==(const PointObject& other) const;
+  bool operator!=(const PointObject& other) const;
+};
 
 /**
  * Point type to store Point data.
  */
-                typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point> Point;
+typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point>
+    Point;
 
-                namespace __class {
+namespace __class {
 
-                    class Point {
-                        public:
-                            class Inter : public oatpp::Type::Interpretation<type::Point, oatpp::String>  {
-                                public:
+class Point {
+ public:
+  class Inter : public oatpp::Type::Interpretation<type::Point, oatpp::String> {
+   public:
+    oatpp::String interpret(const type::Point& value) const override {
+      std::cout << "WHEN ASKED TO INTERPRET, I SAY "
+                << value->toString()->c_str() << std::endl;
+      return value->toString();
+    }
 
-                                    oatpp::String interpret(const type::Point& value) const override {
-                                        std::cout << "WHEN ASKED TO INTERPRET, I SAY " << value->toString()->c_str() << std::endl;
-                                        return value->toString();
-                                    }
+    type::Point reproduce(const oatpp::String& value) const override {
+      std::cout << value->c_str() << std::endl;
+      return std::make_shared<PointObject>(0, 0);
+    }
+  };
 
-                                    type::Point reproduce(const oatpp::String& value) const override {
-                                        std::cout << value->c_str() << std::endl;
-                                        return std::make_shared<PointObject>(0,0);
-                                    }
+ private:
+  static oatpp::Type* createType();
 
-                                };
+ public:
+  static const oatpp::ClassId CLASS_ID;
+  static oatpp::Type* getType();
+};
 
-                        private:
-                            static oatpp::Type* createType();
-                        public:
-                            static const oatpp::ClassId CLASS_ID;
-                            static oatpp::Type* getType();
-                    };
+}  // namespace __class
 
-                }
+}  // namespace type
+}  // namespace mapping
+}  // namespace postgresql
+}  // namespace oatpp
 
-            }}}}
-
-#endif // oatpp_postgresql_mapping_type_point_hpp
+#endif  // oatpp_postgresql_mapping_type_point_hpp

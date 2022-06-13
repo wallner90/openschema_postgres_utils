@@ -24,48 +24,51 @@
 
 #include "types/Point.hpp"
 
-namespace oatpp { namespace postgresql { namespace mapping { namespace type {
+namespace oatpp {
+namespace postgresql {
+namespace mapping {
+namespace type {
 
-                PointObject::PointObject() {
-                }
+PointObject::PointObject() {}
 
-                PointObject::PointObject(v_float32 x, v_float32 y) {
-                    VPoint pp ( {x, y} );
-                    pt = pp;
-                }
+PointObject::PointObject(v_float32 x, v_float32 y) {
+  VPoint pp({x, y});
+  pt = pp;
+}
 
-                const VPoint PointObject::getData() const {
-                    return pt;
-                }
+const VPoint PointObject::getData() const { return pt; }
 
-                oatpp::String PointObject::toString() const {
-                    return "POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")";
-                }
+oatpp::String PointObject::toString() const {
+  return "POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")";
+}
 
-                bool PointObject::operator==(const PointObject &other) const {
-                    return pt.x == other.pt.x and pt.y == other.pt.y;
-                }
+bool PointObject::operator==(const PointObject& other) const {
+  return pt.x == other.pt.x and pt.y == other.pt.y;
+}
 
-                bool PointObject::operator!=(const PointObject &other) const {
-                    return !operator==(other);
-                }
+bool PointObject::operator!=(const PointObject& other) const {
+  return !operator==(other);
+}
 
-                namespace __class {
+namespace __class {
 
-                    const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
+const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
 
-                    oatpp::Type* Point::createType() {
-                        oatpp::Type::Info info;
-                        info.interpretationMap = {{"postgresql", new Inter()}};
-                        std::cout << "ASKED FOR CLASS ID, I SAY " << Point::CLASS_ID.name << std::endl;
-                        return new oatpp::Type(Point::CLASS_ID, info);
-                    }
+oatpp::Type* Point::createType() {
+  oatpp::Type::Info info;
+  info.interpretationMap = {{"postgresql", new Inter()}};
+  std::cout << "ASKED FOR CLASS ID, I SAY " << Point::CLASS_ID.name
+            << std::endl;
+  return new oatpp::Type(Point::CLASS_ID, info);
+}
 
-                    oatpp::Type* Point::getType() {
-                        static Type* type = createType();
-                        return type;
-                    }
+oatpp::Type* Point::getType() {
+  static Type* type = createType();
+  return type;
+}
 
-                }
-
-            }}}}
+}  // namespace __class
+}  // namespace type
+}  // namespace mapping
+}  // namespace postgresql
+}  // namespace oatpp

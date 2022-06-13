@@ -13,8 +13,8 @@
 #include "component/DatabaseComponent.hpp"
 #include "exampleConfig.h"
 #include "oatpp/parser/json/mapping/ObjectMapper.hpp"
-#include "types/Point.hpp"
 #include "postgres_utils.h"
+#include "types/Point.hpp"
 
 int main() {
   // Oat++ Minimal example
@@ -48,7 +48,6 @@ int main() {
     }
   }
 
-
   {
     oatpp::postgresql::mapping::type::UuidObject uuid(
         "1be236cb-f2cb-4707-9c24-35c54d8a1c59");
@@ -59,7 +58,6 @@ int main() {
       std::cout << "E-Mail: " << *(user0->email) << std::endl;
     }
   }
-
 
   // create an IMU to serve as base sensor for the posegraph
   auto imu = oatpp::Object<ImuDto>::createShared();
@@ -77,24 +75,25 @@ int main() {
   m_database->createPosegraph(main_pose_graph, main_pose_graph->base_sensor);
 
   int numVerts = 10;
-  for (int i=0; i<numVerts; i++) {
+  for (int i = 0; i < numVerts; i++) {
+    oatpp::postgresql::mapping::type::Point currentPoint(
+        {static_cast<v_float32>(i), 0.0});
 
-      oatpp::postgresql::mapping::type::Point currentPoint ({static_cast<v_float32>(i), 0.0});
+    auto currentVertex = oatpp::Object<VertexDto>::createShared();
+    currentVertex->position = currentPoint;
+    // currentVertex->position = {{"x", currentPoint->x}, {"y",
+    // currentPoint->y}, {"z", currentPoint->z}};
+    //  currentVertex->position = currentPoint.toString();
 
-      auto currentVertex = oatpp::Object<VertexDto>::createShared();
-      currentVertex->position = currentPoint;
-      //currentVertex->position = {{"x", currentPoint->x}, {"y", currentPoint->y}, {"z", currentPoint->z}};
-      // currentVertex->position = currentPoint.toString();
+    std::cout << currentPoint->toString()->c_str() << std::endl;
 
-      std::cout << currentPoint->toString()->c_str() << std::endl;
+    auto query = m_database->createVertex(main_pose_graph, currentVertex);
+    if (not query->isSuccess())
+      std::cout << query->getErrorMessage()->c_str() << std::endl;
 
-      auto query = m_database->createVertex(main_pose_graph, currentVertex);
-      if (not query->isSuccess())
-        std::cout << query->getErrorMessage()->c_str() << std::endl;
-
-    if (i>0) {
-        std::cout << "adding edge between vertex #" << i-1 << " and #" << i << std::endl;
-
+    if (i > 0) {
+      std::cout << "adding edge between vertex #" << i - 1 << " and #" << i
+                << std::endl;
     }
   }
 
