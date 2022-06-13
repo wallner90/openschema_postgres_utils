@@ -5,7 +5,9 @@
 #include "dto/CameraRigDto.hpp"
 #include "dto/ImuDto.hpp"
 #include "dto/PoseGraphDto.hpp"
+#include "dto/VertexDto.hpp"
 #include "oatpp-postgresql/orm.hpp"
+#include "types/Point.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DbClient)  //<- Begin Codegen
 
@@ -26,6 +28,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
     auto version = executor->getSchemaVersion();
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
+
   }
 
   // create a posegraph with a specific base sensor
@@ -36,6 +39,14 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         "RETURNING *;",
         PREPARE(true),
         PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<SensorDto>, base_sensor))
+
+  // create a vertex
+  QUERY(createVertex,
+        "INSERT INTO vertex (position, posegraph_id_posegraph) "
+        "VALUES "
+        "(ST_GeomFromText(:vertex.position, 4326), :pose_graph.posegraph_id) RETURNING *;",
+        PREPARE(true),
+        PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<VertexDto>, vertex))
 
   // create an IMU that is also a sensor
   QUERY(createIMU,

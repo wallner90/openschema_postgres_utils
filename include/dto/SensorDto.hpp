@@ -17,7 +17,7 @@ class SensorDto : public oatpp::DTO {
   DTO_FIELD(String, id);
   DTO_FIELD(String, topic);
   DTO_FIELD(String, description, "description") = "A Generic Sensor";
-  DTO_FIELD(Enum<Type>::AsString, type, "type") = Type::NONE;
+  DTO_FIELD(Enum<SensorTypes>::AsString, type, "type") = SensorTypes::NONE;
 };
 
 #include OATPP_CODEGEN_END(DTO)

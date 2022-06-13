@@ -16,7 +16,7 @@ class CameraDto : public SensorDto {
 
   DTO_FIELD(UInt16, camera_id, 0);
   DTO_FIELD(String, description, "description") = "A Camera";
-  DTO_FIELD(Enum<Type>::AsString, type, "type") = Type::CAMERA;
+  DTO_FIELD(Enum<SensorTypes>::AsString, type, "type") = SensorTypes::CAMERA;
 };
 
 #include OATPP_CODEGEN_END(DTO)

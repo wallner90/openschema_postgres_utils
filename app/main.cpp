@@ -13,6 +13,7 @@
 #include "component/DatabaseComponent.hpp"
 #include "exampleConfig.h"
 #include "oatpp/parser/json/mapping/ObjectMapper.hpp"
+#include "types/Point.hpp"
 #include "postgres_utils.h"
 
 int main() {
@@ -40,12 +41,13 @@ int main() {
           created_user->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
       std::cout << "Found " << fetched_created_users->size() << " users"
                 << std::endl;
-      for (auto created_user : *fetched_created_users) {
-        std::cout << "created user has id" << *(created_user->userName)
+      for (auto created_user_it : *fetched_created_users) {
+        std::cout << "created user has id" << *(created_user_it->userName)
                   << std::endl;
       }
     }
   }
+
 
   {
     oatpp::postgresql::mapping::type::UuidObject uuid(
@@ -53,10 +55,11 @@ int main() {
     auto dbResult = m_database->getUserById(uuid);
     auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
     if (result->size()) {
-      auto user = result[0];
-      std::cout << "E-Mail: " << *(user->email) << std::endl;
+      auto user0 = result[0];
+      std::cout << "E-Mail: " << *(user0->email) << std::endl;
     }
   }
+
 
   // create an IMU to serve as base sensor for the posegraph
   auto imu = oatpp::Object<ImuDto>::createShared();
@@ -73,13 +76,25 @@ int main() {
   // add pose graph to DB
   m_database->createPosegraph(main_pose_graph, main_pose_graph->base_sensor);
 
-  // add a couple of vertices, with edges between consecutive ones
   int numVerts = 10;
-  for (int i = 0; i < numVerts; i++) {
-    std::cout << "adding vertex #" << i << std::endl;
-    if (i > 0) {
-      std::cout << "adding edge between vertex #" << i - 1 << " and #" << i
-                << std::endl;
+  for (int i=0; i<numVerts; i++) {
+
+      oatpp::postgresql::mapping::type::Point currentPoint ({static_cast<v_float32>(i), 0.0});
+
+      auto currentVertex = oatpp::Object<VertexDto>::createShared();
+      currentVertex->position = currentPoint;
+      //currentVertex->position = {{"x", currentPoint->x}, {"y", currentPoint->y}, {"z", currentPoint->z}};
+      // currentVertex->position = currentPoint.toString();
+
+      std::cout << currentPoint->toString()->c_str() << std::endl;
+
+      auto query = m_database->createVertex(main_pose_graph, currentVertex);
+      if (not query->isSuccess())
+        std::cout << query->getErrorMessage()->c_str() << std::endl;
+
+    if (i>0) {
+        std::cout << "adding edge between vertex #" << i-1 << " and #" << i << std::endl;
+
     }
   }
 

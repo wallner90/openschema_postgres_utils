@@ -10,7 +10,7 @@
 
 #include OATPP_CODEGEN_BEGIN(DTO)
 
-ENUM(Type, v_int32,
+ENUM(SensorTypes, v_int32,
      VALUE(NONE, 0, "NONE"),
      VALUE(CAMERA, 1, "CAMERA"),
      VALUE(IMU, 2, "IMU")
