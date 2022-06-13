@@ -65,8 +65,8 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
   QUERY(createUser,
         "INSERT INTO AppUser"
-        "(id, username, email, password, role) VALUES "
-        "(uuid_generate_v4(), :user.username, :user.email, :user.password, "
+        "(username, email, password, role) VALUES "
+        "(:user.username, :user.email, :user.password, "
         ":user.role)"
         "RETURNING *;",
         PREPARE(true),  // user prepared statement!

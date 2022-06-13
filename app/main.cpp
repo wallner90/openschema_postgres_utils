@@ -26,8 +26,8 @@ int main() {
 
   // uuid tests
   auto user = oatpp::Object<UserDto>::createShared();
-  user->userName = "test_user2";
-  user->email = "test2@test.com";
+  user->userName = "test_user3";
+  user->email = "test3@test.com";
   user->password = "test12345";
   user->role = Role::GUEST;
 
