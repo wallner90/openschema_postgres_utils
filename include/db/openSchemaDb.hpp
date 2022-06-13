@@ -87,11 +87,15 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
   QUERY(getUserById, "SELECT * FROM AppUser WHERE id=:id;",
         PREPARE(true),  //<-- user prepared statement!
-        PARAM(oatpp::String, id))
+        PARAM(oatpp::postgresql::mapping::type::Uuid, id))
 
-  QUERY(getAllUsers, "SELECT * FROM AppUser LIMIT :limit OFFSET :offset;",
-        PREPARE(true),  //<-- user prepared statement!
-        PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
+//   QUERY(getAllUsers, "SELECT * FROM AppUser LIMIT :limit OFFSET :offset;",
+//         PREPARE(true),  //<-- user prepared statement!
+//         PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
+
+  QUERY(getAllUsers, "SELECT * FROM AppUser;",
+        PREPARE(true))
+
 
   QUERY(deleteUserById, "DELETE FROM AppUser WHERE id=:id;",
         PREPARE(true),  //<-- user prepared statement!

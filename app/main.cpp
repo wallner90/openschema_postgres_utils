@@ -33,13 +33,28 @@ int main() {
 
   auto created_user = m_database->createUser(user);
 
-  auto all_users_db_result = m_database->getAllUsers(0u, 100u);
-  if (all_users_db_result->isSuccess()) {
-    auto fetched_created_users =
-        created_user->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-    for (auto created_user : *fetched_created_users) {
-      std::cout << "created user has id" << *(created_user->userName)
+  {
+    auto all_users_db_result = m_database->getAllUsers();
+    if (all_users_db_result->isSuccess()) {
+      auto fetched_created_users =
+          created_user->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
+      std::cout << "Found " << fetched_created_users->size() << " users"
                 << std::endl;
+      for (auto created_user : *fetched_created_users) {
+        std::cout << "created user has id" << *(created_user->userName)
+                  << std::endl;
+      }
+    }
+  }
+
+  {
+    oatpp::postgresql::mapping::type::UuidObject uuid(
+        "1be236cb-f2cb-4707-9c24-35c54d8a1c59");
+    auto dbResult = m_database->getUserById(uuid);
+    auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
+    if (result->size()) {
+      auto user = result[0];
+      std::cout << "E-Mail: " << *(user->email) << std::endl;
     }
   }
 
