@@ -30,15 +30,18 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
   // create a posegraph with a specific base sensor
   QUERY(createPosegraph,
-        "INSERT INTO pose_graph (description, base_sensor) VALUES (:pose_graph.description, :base_sensor.id) RETURNING *;",
+        "INSERT INTO pose_graph "
+        "(posegraph_id, description, base_sensor) "
+        "VALUES (uuid_generate_v4(), :pose_graph.description, :base_sensor.id) "
+        "RETURNING *;",
         PREPARE(true),
         PARAM(oatpp::Object<PoseGraphDto>, pose_graph), PARAM(oatpp::Object<SensorDto>, base_sensor))
 
   // create an IMU that is also a sensor
   QUERY(createIMU,
         "INSERT INTO imu"
-        "(description) VALUES "
-        "(:imu.description)"
+        "(sensor_id, description) VALUES "
+        "(uuid_generate_v4(), :imu.description)"
         "RETURNING *;"
         "INSERT INTO sensor"
         "(description) VALUES "
@@ -49,8 +52,8 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
   QUERY(createCameraRig,
          "INSERT INTO camera_rig"
-         "(description) VALUES "
-         "(:camera_rig.description)"
+         "(camera_rig_id, description) VALUES "
+         "uuid_generate_v4(), (:camera_rig.description)"
          "RETURNING *;",
          PREPARE(true),
          PARAM(oatpp::Object<CameraRigDto>, camera_rig))
@@ -59,14 +62,6 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
           PREPARE(true),  //<-- user prepared statement!
           PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
 
-
-    //QUERY(createCameraRig,
-  //      "INSERT INTO camera_rig"
-  //      "(description) VALUES "
-  //      "(camera_rig_description)"
-  //      "RETURNING *;",
-  //      PREPARE(true),
-  //      PARAM(oatpp::String, camera_rig_description))
 
   QUERY(createUser,
         "INSERT INTO AppUser"

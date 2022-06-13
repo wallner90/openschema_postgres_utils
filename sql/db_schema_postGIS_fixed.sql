@@ -14,13 +14,26 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS AppUser (
+    id                      uuid NOT NULL DEFAULT uuid_generate_v4(),
+    username                varchar (256) NOT NULL,
+    email                   varchar (256) NOT NULL,
+    password                varchar (256) NOT NULL,
+    role                    varchar (256) NULL,
+    CONSTRAINT              UK_APPUSER_USERNAME UNIQUE (username),
+    CONSTRAINT              UK_APPUSER_EMAIL UNIQUE (email),
+    CONSTRAINT              user_pk PRIMARY KEY (id)
+);
+
+
+
 -- object: public.sensor | type: TABLE --
 -- DROP TABLE IF EXISTS public.sensor CASCADE;
 CREATE TABLE public.sensor (
-	sensor_id varchar NOT NULL DEFAULT uuid_generate_v4(),
+	sensor_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	topic varchar,
 	description varchar,
-	posegraph_id_posegraph varchar,
+	posegraph_id_posegraph uuid,
 	CONSTRAINT sensor_pk PRIMARY KEY (sensor_id)
 );
 -- ddl-end --
@@ -42,7 +55,7 @@ WITH SCHEMA public;
 CREATE TABLE public.vertex (
 	vertex_id serial NOT NULL,
 	"position" geometry(POINT),
-	posegraph_id_posegraph varchar,
+	posegraph_id_posegraph uuid,
 	CONSTRAINT vertex_pk PRIMARY KEY (vertex_id)
 );
 -- ddl-end --
@@ -52,8 +65,8 @@ ALTER TABLE public.vertex OWNER TO postgres;
 -- object: public.camera | type: TABLE --
 -- DROP TABLE IF EXISTS public.camera CASCADE;
 CREATE TABLE public.camera (
-	camera_id varchar NOT NULL,
-	camera_rig_id_camera_rig varchar,
+	camera_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+	camera_rig_id_camera_rig uuid,
 	CONSTRAINT camera_pk PRIMARY KEY (camera_id,sensor_id)
 )
  INHERITS(public.sensor);
@@ -64,7 +77,7 @@ ALTER TABLE public.camera OWNER TO postgres;
 -- object: public.camera_rig | type: TABLE --
 -- DROP TABLE IF EXISTS public.camera_rig CASCADE;
 CREATE TABLE public.camera_rig (
-	camera_rig_id varchar NOT NULL DEFAULT uuid_generate_v4(),
+	camera_rig_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	description varchar,
 	CONSTRAINT camera_rig_pk PRIMARY KEY (camera_rig_id)
 );
@@ -96,7 +109,7 @@ CREATE TABLE public.edge (
 	"T_A_B" float[][][][][][][] DEFAULT '{1,0,0,0,0,0,0}',
 	start_vertex public.vertex,
 	end_vertex public.vertex,
-	posegraph_id_posegraph varchar,
+	posegraph_id_posegraph uuid,
 	CONSTRAINT edge_pk PRIMARY KEY (edge_id)
 );
 -- ddl-end --
@@ -108,7 +121,7 @@ ALTER TABLE public.edge OWNER TO postgres;
 -- object: public.posegraph | type: TABLE --
 -- DROP TABLE IF EXISTS public.posegraph CASCADE;
 CREATE TABLE public.posegraph (
-	posegraph_id varchar NOT NULL DEFAULT uuid_generate_v4(),
+	posegraph_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	description varchar,
 	CONSTRAINT posegraph_pk PRIMARY KEY (posegraph_id)
 );
