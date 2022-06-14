@@ -46,6 +46,8 @@ struct VPoint {
 
 class PointObject {
  public:
+  static constexpr v_buff_size DATA_SIZE = sizeof(struct VPoint);
+
  private:
   VPoint pt;
 
@@ -72,7 +74,7 @@ class PointObject {
    * Get size of ObjectId data.
    * @return - &l:ObjectId::DATA_SIZE;.
    */
-  // v_buff_size getSize() const;
+  v_buff_size getSize() const;
 
   /**
    * To hex string.

@@ -38,6 +38,10 @@ PointObject::PointObject(v_float32 x, v_float32 y) {
 
 const VPoint PointObject::getData() const { return pt; }
 
+v_buff_size PointObject::getSize() const {
+  return DATA_SIZE;
+}
+
 oatpp::String PointObject::toString() const {
   return "POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")";
 }
