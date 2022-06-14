@@ -123,6 +123,7 @@ ALTER TABLE public.edge OWNER TO postgres;
 CREATE TABLE public.posegraph (
 	posegraph_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	description varchar,
+	base_sensor uuid,
 	CONSTRAINT posegraph_pk PRIMARY KEY (posegraph_id)
 );
 -- ddl-end --

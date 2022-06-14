@@ -33,7 +33,8 @@ include(Warnings)
 
 find_package(Boost REQUIRED)
 find_package(oatpp              1.3.0 REQUIRED)
-find_package(oatpp-postgresql   1.3.0 REQUIRED)
+#find_package(oatpp-postgresql   1.3.0 REQUIRED)
+find_package(oatpp-postgresql   1.3.0 EXACT REQUIRED PATHS "${CMAKE_SOURCE_DIR}/thirdparty/oatpp-postgresql/install_debug")
 
 # Check for LTO support.
 find_lto(CXX)

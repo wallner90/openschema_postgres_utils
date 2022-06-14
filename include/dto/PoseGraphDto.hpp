@@ -16,7 +16,7 @@ class PoseGraphDto : public oatpp::DTO {
   DTO_INIT(PoseGraphDto, oatpp::DTO)
   DTO_FIELD(oatpp::postgresql::mapping::type::Uuid, posegraph_id, "posegraph_id");
   DTO_FIELD(String, description, "description");
-  DTO_FIELD(Object<SensorDto>, base_sensor, "base_sensor");
+  DTO_FIELD(oatpp::postgresql::mapping::type::Uuid, base_sensor_id, "base_sensor_id");
 };
 
 #include OATPP_CODEGEN_END(DTO)

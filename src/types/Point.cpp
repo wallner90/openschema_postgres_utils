@@ -43,7 +43,7 @@ v_buff_size PointObject::getSize() const {
 }
 
 oatpp::String PointObject::toString() const {
-  return "POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")";
+  return "'POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")'";
 }
 
 bool PointObject::operator==(const PointObject& other) const {

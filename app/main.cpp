@@ -26,6 +26,8 @@ int main() {
                   m_database);  // Inject database component
 
   // uuid tests
+
+  // create a user
   auto user = oatpp::Object<UserDto>::createShared();
   user->userName = "test_user3";
   user->email = "test3@test.com";
@@ -34,6 +36,7 @@ int main() {
 
   auto created_user = m_database->createUser(user);
 
+  // show all users
   {
     auto all_users_db_result = m_database->getAllUsers();
     if (all_users_db_result->isSuccess()) {
@@ -48,6 +51,7 @@ int main() {
     }
   }
 
+  // query a user by user id
   {
     oatpp::postgresql::mapping::type::UuidObject uuid(
         "1be236cb-f2cb-4707-9c24-35c54d8a1c59");
@@ -69,10 +73,10 @@ int main() {
   // create empty posegraph
   auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
   main_pose_graph->description = "the main posegraph";
-  main_pose_graph->base_sensor = imu;
+  main_pose_graph->base_sensor_id = imu->sensor_id;
 
   // add pose graph to DB
-  m_database->createPosegraph(main_pose_graph, main_pose_graph->base_sensor);
+  m_database->createPosegraph(main_pose_graph, imu);
 
   int numVerts = 10;
   for (int i = 0; i < numVerts; i++) {
