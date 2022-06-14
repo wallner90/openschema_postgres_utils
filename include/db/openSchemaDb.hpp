@@ -21,7 +21,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     oatpp::orm::SchemaMigration migration(executor);
     setEnabledInterpretations({"postgresql", "postgis"});
     migration.addFile(1 /* start from version 1 */,
-                      "/workspaces/openschema_postgres_utils/sql/"
+                      "/home/ernst/Documents/openschema_postgres_utils/sql/"
                       "db_schema_postGIS_fixed.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
@@ -32,7 +32,8 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     OATPP_LOGD("openSchemaDb", "Migration - OK. Version=%d.", version);
   }
 
-  // create a posegraph with a specific base sensor
+  // create a posegraph with a specific base sensor. TODO - NOT INSERTING A
+  // POSEGRAPH
   QUERY(createPosegraph,
         "INSERT INTO posegraph "
         "(description) "
@@ -40,7 +41,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         "RETURNING *;",
         PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph))
 
-  // create a vertex
+  // create a vertex TODO! ONLY WORKS WITH (HARDCODED) NATURAL NUMBERS ...
   QUERY(createVertex,
         "INSERT INTO vertex (position, posegraph_id_posegraph) "
         "VALUES "
@@ -49,19 +50,20 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
         PARAM(oatpp::Object<VertexDto>, vertex))
 
-  // create an IMU that is also a sensor
+  // create an IMU that is also a sensor. TODO! NOT INSERTING IMU! POSSIBLY
+  // BECAUSE WE HAVE TO USE TRANSACTIONS HERE?
   QUERY(createIMU,
         "INSERT INTO imu"
         "(description, posegraph_id_posegraph) VALUES "
         "(:imu.description, :posegraph.posegraph_id)"
-        ";",
+        "RETURNING *;",
         PREPARE(true), PARAM(oatpp::Object<ImuDto>, imu),
         PARAM(oatpp::Object<PoseGraphDto>, posegraph))
 
   QUERY(createCameraRig,
         "INSERT INTO camera_rig"
-        "(camera_rig_id, description) VALUES "
-        "uuid_generate_v4(), (:camera_rig.description)"
+        "(description) VALUES "
+        "(:camera_rig.description)"
         "RETURNING *;",
         PREPARE(true), PARAM(oatpp::Object<CameraRigDto>, camera_rig))
 
@@ -100,6 +102,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
   //         PREPARE(true),  //<-- user prepared statement!
   //         PARAM(oatpp::UInt32, offset), PARAM(oatpp::UInt32, limit))
 
+  // get all users. TODO! DOES NOT FIND ANY USERS
   QUERY(getAllUsers, "SELECT * FROM AppUser;", PREPARE(true))
 
   QUERY(deleteUserById, "DELETE FROM AppUser WHERE id=:id;",

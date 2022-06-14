@@ -1,3 +1,4 @@
+
 // Executables must have the following defined if the library contains
 // doctest definitions. For builds with this disabled, e.g. code shipped to
 // users, this can be left out.
@@ -26,6 +27,8 @@ int main() {
                   m_database);  // Inject database component
 
   // uuid tests
+
+  // create a user
   auto user = oatpp::Object<UserDto>::createShared();
   user->userName = "test_user3";
   user->email = "test3@test.com";
@@ -34,6 +37,7 @@ int main() {
 
   auto created_user = m_database->createUser(user);
 
+  // show all users
   {
     auto all_users_db_result = m_database->getAllUsers();
     if (all_users_db_result->isSuccess()) {
@@ -48,6 +52,7 @@ int main() {
     }
   }
 
+  // query a user by user id
   {
     oatpp::postgresql::mapping::type::UuidObject uuid(
         "1be236cb-f2cb-4707-9c24-35c54d8a1c59");
@@ -71,6 +76,7 @@ int main() {
 
   // add imu to DB
   auto sensor_results = m_database->createIMU(imu, posegraph_results[0])->fetch<oatpp::Vector<oatpp::Object<ImuDto>>>();
+
 
   int numVerts = 10;
   for (int i = 0; i < numVerts; i++) {

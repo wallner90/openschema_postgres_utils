@@ -109,6 +109,7 @@ ALTER TABLE public.edge OWNER TO postgres;
 -- DROP TABLE IF EXISTS public.posegraph CASCADE;
 CREATE TABLE public.posegraph (
 	posegraph_id varchar NOT NULL DEFAULT uuid_generate_v4(),
+	base_sensor varchar,
 	description varchar,
 	CONSTRAINT posegraph_pk PRIMARY KEY (posegraph_id)
 );

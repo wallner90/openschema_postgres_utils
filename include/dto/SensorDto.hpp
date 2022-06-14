@@ -10,7 +10,6 @@
 #include "oatpp/core/macro/codegen.hpp"
 #include "oatpp-postgresql/mapping/type/Uuid.hpp"
 
-
 #include OATPP_CODEGEN_BEGIN(DTO)
 
 class SensorDto : public oatpp::DTO {
