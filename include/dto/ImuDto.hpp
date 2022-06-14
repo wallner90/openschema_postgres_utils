@@ -13,8 +13,12 @@
 
 class ImuDto : public SensorDto {
   DTO_INIT(ImuDto, SensorDto)
-  DTO_FIELD(String, description, "description") = "An IMU";
-  DTO_FIELD(Enum<SensorTypes>::AsString, type, "type") = SensorTypes::IMU;
+  
+  ImuDto()
+  {
+    type = SensorTypes::IMU;
+    description = "An IMU";
+  }
 };
 
 #include OATPP_CODEGEN_END(DTO)

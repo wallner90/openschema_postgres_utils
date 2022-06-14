@@ -24,6 +24,8 @@
 
 #include "types/Point.hpp"
 
+#include <ostream>
+
 namespace oatpp {
 namespace postgresql {
 namespace mapping {
@@ -38,12 +40,17 @@ PointObject::PointObject(v_float32 x, v_float32 y) {
 
 const VPoint PointObject::getData() const { return pt; }
 
-v_buff_size PointObject::getSize() const {
-  return DATA_SIZE;
-}
+v_buff_size PointObject::getSize() const { return DATA_SIZE; }
 
 oatpp::String PointObject::toString() const {
-  return "POINT(" + std::to_string(pt.x) + " " + std::to_string(pt.y) + ")";
+  // std::ostringstream stream;
+
+  oatpp::String x(std::to_string((float)pt.x));
+  oatpp::String y(std::to_string((float)pt.y));
+  return {"ST_PointFromText('POINT(0 2)')"};
+
+  // std::string point2 = std::string("POINT(0.0 0.01)");
+  // return {point2};
 }
 
 bool PointObject::operator==(const PointObject& other) const {

@@ -6,6 +6,7 @@
 #define POSTGRES_UTILS_VERTEXDTO_HPP
 
 #include "oatpp/core/Types.hpp"
+#include "oatpp-postgresql/mapping/type/Uuid.hpp"
 #include "oatpp/core/macro/codegen.hpp"
 #include "types/Point.hpp"
 
@@ -14,7 +15,7 @@
 class VertexDto : public oatpp::DTO {
   DTO_INIT(VertexDto, oatpp::DTO)
 
-  DTO_FIELD(String, vertex_id, "vertex_id");
+  DTO_FIELD(oatpp::postgresql::mapping::type::Uuid, vertex_id, "vertex_id");
   // DTO_FIELD(oatpp::UnorderedFields<oatpp::Float32>, position, "position") =
   // {{"x", 0}, {"y", 0}, {"z", 0}};
   DTO_FIELD(oatpp::postgresql::mapping::type::Point, position, "position");

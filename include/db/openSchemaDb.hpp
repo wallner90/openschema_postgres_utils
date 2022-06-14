@@ -34,33 +34,29 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
 
   // create a posegraph with a specific base sensor
   QUERY(createPosegraph,
-        "INSERT INTO pose_graph "
-        "(posegraph_id, description, base_sensor) "
-        "VALUES (uuid_generate_v4(), :pose_graph.description, :base_sensor.id) "
+        "INSERT INTO posegraph "
+        "(description) "
+        "VALUES (:posegraph.description) "
         "RETURNING *;",
-        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, pose_graph),
-        PARAM(oatpp::Object<SensorDto>, base_sensor))
+        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph))
 
   // create a vertex
   QUERY(createVertex,
         "INSERT INTO vertex (position, posegraph_id_posegraph) "
         "VALUES "
-        "(ST_GeomFromText(:vertex.position, 4326), :pose_graph.posegraph_id) "
+        "(:vertex.position, :posegraph.posegraph_id) "
         "RETURNING *;",
-        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, pose_graph),
+        PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
         PARAM(oatpp::Object<VertexDto>, vertex))
 
   // create an IMU that is also a sensor
   QUERY(createIMU,
         "INSERT INTO imu"
-        "(sensor_id, description) VALUES "
-        "(uuid_generate_v4(), :imu.description)"
-        "RETURNING *;"
-        "INSERT INTO sensor"
-        "(description) VALUES "
-        "(:imu.description)"
-        "RETURNING *;",
-        PREPARE(true), PARAM(oatpp::Object<ImuDto>, imu))
+        "(description, posegraph_id_posegraph) VALUES "
+        "(:imu.description, :posegraph.posegraph_id)"
+        ";",
+        PREPARE(true), PARAM(oatpp::Object<ImuDto>, imu),
+        PARAM(oatpp::Object<PoseGraphDto>, posegraph))
 
   QUERY(createCameraRig,
         "INSERT INTO camera_rig"

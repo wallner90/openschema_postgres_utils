@@ -105,7 +105,8 @@ class Point {
     }
 
     type::Point reproduce(const oatpp::String& value) const override {
-      std::cout << value->c_str() << std::endl;
+      // std::cout << value->c_str() << std::endl;
+      (void)value;
       return std::make_shared<PointObject>(0, 0);
     }
   };

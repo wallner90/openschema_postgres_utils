@@ -59,20 +59,18 @@ int main() {
     }
   }
 
+  // create empty posegraph
+  auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
+  main_pose_graph->description = "the main posegraph";
+  // add pose graph to DB
+  auto posegraph_results = m_database->createPosegraph(main_pose_graph)->fetch<oatpp::Vector<oatpp::Object<PoseGraphDto>>>();
+
   // create an IMU to serve as base sensor for the posegraph
   auto imu = oatpp::Object<ImuDto>::createShared();
   imu->description = "an imu";
 
   // add imu to DB
-  m_database->createIMU(imu);
-
-  // create empty posegraph
-  auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
-  main_pose_graph->description = "the main posegraph";
-  main_pose_graph->base_sensor = imu;
-
-  // add pose graph to DB
-  m_database->createPosegraph(main_pose_graph, main_pose_graph->base_sensor);
+  auto sensor_results = m_database->createIMU(imu, posegraph_results[0])->fetch<oatpp::Vector<oatpp::Object<ImuDto>>>();
 
   int numVerts = 10;
   for (int i = 0; i < numVerts; i++) {
@@ -86,8 +84,7 @@ int main() {
     //  currentVertex->position = currentPoint.toString();
 
     std::cout << currentPoint->toString()->c_str() << std::endl;
-
-    auto query = m_database->createVertex(main_pose_graph, currentVertex);
+    auto query = m_database->createVertex(posegraph_results[0], currentVertex);
     if (not query->isSuccess())
       std::cout << query->getErrorMessage()->c_str() << std::endl;
 
