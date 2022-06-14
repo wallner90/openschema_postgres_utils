@@ -19,6 +19,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
   OpenSchemaDb(const std::shared_ptr<oatpp::orm::Executor>& executor)
       : oatpp::orm::DbClient(executor) {
     oatpp::orm::SchemaMigration migration(executor);
+    setEnabledInterpretations({"postgresql", "postgis"});
     migration.addFile(1 /* start from version 1 */,
                       "/workspaces/openschema_postgres_utils/sql/"
                       "db_schema_postGIS_fixed.sql");

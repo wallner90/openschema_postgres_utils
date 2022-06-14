@@ -8,12 +8,13 @@
 #include "dto/SensorDto.hpp"
 #include "oatpp/core/Types.hpp"
 #include "oatpp/core/macro/codegen.hpp"
+#include "oatpp-postgresql/mapping/type/Uuid.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DTO)
 
 class PoseGraphDto : public oatpp::DTO {
   DTO_INIT(PoseGraphDto, oatpp::DTO)
-  DTO_FIELD(String, posegraph_id, "posegraph_id");
+  DTO_FIELD(oatpp::postgresql::mapping::type::Uuid, posegraph_id, "posegraph_id");
   DTO_FIELD(String, description, "description");
   DTO_FIELD(Object<SensorDto>, base_sensor, "base_sensor");
 };

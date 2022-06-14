@@ -60,7 +60,7 @@ const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
 
 oatpp::Type* Point::createType() {
   oatpp::Type::Info info;
-  info.interpretationMap = {{"postgresql", new Inter()}};
+  info.interpretationMap = {{"postgis", new Inter()}};
   std::cout << "ASKED FOR CLASS ID, I SAY " << Point::CLASS_ID.name
             << std::endl;
   return new oatpp::Type(Point::CLASS_ID, info);

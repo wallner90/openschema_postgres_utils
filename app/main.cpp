@@ -97,7 +97,7 @@ int main() {
     }
   }
 
-  return 0;
+ return 0;
 
   auto new_camera_rig = oatpp::Object<CameraRigDto>::createShared();
   new_camera_rig->description = std::string("TestRigFromCode");
