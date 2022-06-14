@@ -26,55 +26,16 @@ int main() {
   OATPP_COMPONENT(std::shared_ptr<OpenSchemaDb>,
                   m_database);  // Inject database component
 
-  // uuid tests
-
-  // create a user
-  auto user = oatpp::Object<UserDto>::createShared();
-  user->userName = "test_user3";
-  user->email = "test3@test.com";
-  user->password = "test12345";
-  user->role = Role::GUEST;
-
-  auto created_user = m_database->createUser(user);
-
-  // show all users
-  {
-    auto all_users_db_result = m_database->getAllUsers();
-    if (all_users_db_result->isSuccess()) {
-      auto fetched_created_users =
-          created_user->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-      std::cout << "Found " << fetched_created_users->size() << " users"
-                << std::endl;
-      for (auto created_user_it : *fetched_created_users) {
-        std::cout << "created user has id" << *(created_user_it->userName)
-                  << std::endl;
-      }
-    }
-  }
-
-  // query a user by user id
-  {
-    oatpp::postgresql::mapping::type::UuidObject uuid(
-        "1be236cb-f2cb-4707-9c24-35c54d8a1c59");
-    auto dbResult = m_database->getUserById(uuid);
-    auto result = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-    if (result->size()) {
-      auto user0 = result[0];
-      std::cout << "E-Mail: " << *(user0->email) << std::endl;
-    }
-  }
-
   // create empty posegraph
   auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
   main_pose_graph->description = "the main posegraph";
   // add pose graph to DB
   auto posegraph_results = m_database->createPosegraph(main_pose_graph)->fetch<oatpp::Vector<oatpp::Object<PoseGraphDto>>>();
 
-  // create an IMU to serve as base sensor for the posegraph
+  // create an IMU 
   auto imu = oatpp::Object<ImuDto>::createShared();
   imu->description = "an imu";
-
-  // add imu to DB
+  // add imu to DB (and add to posegraph, i.e., one posegraph has 1-n IMUs)
   auto sensor_results = m_database->createIMU(imu, posegraph_results[0])->fetch<oatpp::Vector<oatpp::Object<ImuDto>>>();
 
 
