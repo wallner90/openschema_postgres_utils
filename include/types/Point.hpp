@@ -89,8 +89,7 @@ class PointObject {
 /**
  * Point type to store Point data.
  */
-typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point>
-    Point;
+typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point> Point;
 
 namespace __class {
 
@@ -98,10 +97,9 @@ class Point {
  public:
   class Inter : public oatpp::Type::Interpretation<type::Point, oatpp::String> {
    public:
-    oatpp::String interpret(const type::Point& value) const override {
-      std::cout << "WHEN ASKED TO INTERPRET, I SAY "
-                << value->toString()->c_str() << std::endl;
-      return value->toString();
+      oatpp::String interpret(const type::Point& value) const override {
+          std::cout << "PASSING " << value->toString()->c_str() << std::endl;
+          return value->toString();
     }
 
     type::Point reproduce(const oatpp::String& value) const override {

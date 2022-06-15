@@ -18,7 +18,7 @@ class VertexDto : public oatpp::DTO {
   DTO_FIELD(oatpp::postgresql::mapping::type::Uuid, vertex_id, "vertex_id");
   // DTO_FIELD(oatpp::UnorderedFields<oatpp::Float32>, position, "position") =
   // {{"x", 0}, {"y", 0}, {"z", 0}};
-  DTO_FIELD(oatpp::postgresql::mapping::type::Point, position, "position");
+    DTO_FIELD(oatpp::postgresql::mapping::type::Point, position, "position");
   // DTO_FIELD(String, position, "position");
   DTO_FIELD(String, posegraph_id, "posegraph_id_posegraph");
 };

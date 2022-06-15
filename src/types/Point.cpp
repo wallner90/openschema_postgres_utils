@@ -22,64 +22,62 @@
  *
  ***************************************************************************/
 
+
 #include "types/Point.hpp"
 
 #include <ostream>
+#include <oatpp/encoding/Unicode.hpp>
+#include <oatpp/core/data/stream/BufferStream.hpp>
+#include <sstream>
 
 namespace oatpp {
-namespace postgresql {
-namespace mapping {
-namespace type {
+    namespace postgresql {
+        namespace mapping {
+            namespace type {
 
-PointObject::PointObject() {}
+                PointObject::PointObject() {}
 
-PointObject::PointObject(v_float32 x, v_float32 y) {
-  VPoint pp({x, y});
-  pt = pp;
-}
+                PointObject::PointObject(v_float32 x, v_float32 y) {
+                    VPoint pp({x, y});
+                    pt = pp;
+                }
 
-const VPoint PointObject::getData() const { return pt; }
+                const VPoint PointObject::getData() const { return pt; }
 
-v_buff_size PointObject::getSize() const { return DATA_SIZE; }
+                v_buff_size PointObject::getSize() const { return DATA_SIZE; }
 
-oatpp::String PointObject::toString() const {
-  // std::ostringstream stream;
+                oatpp::String PointObject::toString() const {
+                    return {"POINT(" + std::to_string(pt.x) + " " +  std::to_string(pt.y) + ")"};
+                    //return {"POINT(-71.060316 48.432044)"};
+                }
 
-  oatpp::String x(std::to_string((float)pt.x));
-  oatpp::String y(std::to_string((float)pt.y));
-  return {"ST_PointFromText('POINT(0 2)')"};
+                bool PointObject::operator==(const PointObject& other) const {
+                    return pt.x == other.pt.x and pt.y == other.pt.y;
+                }
 
-  // std::string point2 = std::string("POINT(0.0 0.01)");
-  // return {point2};
-}
+                bool PointObject::operator!=(const PointObject& other) const {
+                    return !operator==(other);
+                }
 
-bool PointObject::operator==(const PointObject& other) const {
-  return pt.x == other.pt.x and pt.y == other.pt.y;
-}
+                namespace __class {
 
-bool PointObject::operator!=(const PointObject& other) const {
-  return !operator==(other);
-}
+                    const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
 
-namespace __class {
+                    oatpp::Type* Point::createType() {
+                        oatpp::Type::Info info;
+                        info.interpretationMap = {{"postgresql", new Inter()}};
+                        std::cout << "ASKED FOR CLASS ID, I SAY " << Point::CLASS_ID.name
+                                  << std::endl;
+                        return new oatpp::Type(Point::CLASS_ID, info);
+                    }
 
-const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
+                    oatpp::Type* Point::getType() {
+                        static Type* type = createType();
+                        return type;
+                    }
 
-oatpp::Type* Point::createType() {
-  oatpp::Type::Info info;
-  info.interpretationMap = {{"postgis", new Inter()}};
-  std::cout << "ASKED FOR CLASS ID, I SAY " << Point::CLASS_ID.name
-            << std::endl;
-  return new oatpp::Type(Point::CLASS_ID, info);
-}
-
-oatpp::Type* Point::getType() {
-  static Type* type = createType();
-  return type;
-}
-
-}  // namespace __class
-}  // namespace type
-}  // namespace mapping
-}  // namespace postgresql
+                }  // namespace __class
+            }  // namespace type
+        }  // namespace mapping
+    }  // namespace postgresql
 }  // namespace oatpp

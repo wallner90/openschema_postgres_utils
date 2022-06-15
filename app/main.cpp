@@ -44,14 +44,16 @@ int main() {
     oatpp::postgresql::mapping::type::Point currentPoint(
         {static_cast<v_float32>(i), 0.0});
 
+    std::cout << "ADDING NEW VERTX TO POSE GRAPH " << posegraph_results[0]->posegraph_id->toString()->c_str() << std::endl;
+
     auto currentVertex = oatpp::Object<VertexDto>::createShared();
     currentVertex->position = currentPoint;
-    // currentVertex->position = {{"x", currentPoint->x}, {"y",
-    // currentPoint->y}, {"z", currentPoint->z}};
-    //  currentVertex->position = currentPoint.toString();
 
-    std::cout << currentPoint->toString()->c_str() << std::endl;
-    auto query = m_database->createVertex(posegraph_results[0], currentVertex);
+    // THIS WORKS
+    auto query = m_database->createVertexFromString(posegraph_results[0], currentVertex->position->toString(), oatpp::UInt16 (4326));
+
+    // THIS DOESNT
+    query = m_database->createVertex(posegraph_results[0], currentVertex, oatpp::UInt16 (4326));
     if (not query->isSuccess())
       std::cout << query->getErrorMessage()->c_str() << std::endl;
 

@@ -31,7 +31,7 @@
 -- -- ddl-end --
 
 -- object: "uuid-ossp" | type: EXTENSION --
--- DROP EXTENSION IF EXISTS "uuid-ossp" CASCADE;
+DROP EXTENSION IF EXISTS "uuid-ossp" CASCADE;
 CREATE EXTENSION "uuid-ossp"
 WITH SCHEMA public
 VERSION '1.1';
@@ -73,16 +73,16 @@ ALTER TABLE public.sensor OWNER TO postgres;
 -- ddl-end --
 
 -- object: postgis | type: EXTENSION --
--- DROP EXTENSION IF EXISTS postgis CASCADE;
+DROP EXTENSION IF EXISTS postgis CASCADE;
 CREATE EXTENSION postgis
-WITH SCHEMA public
-VERSION '3.0.0';
+WITH SCHEMA public;
+-- VERSION '3.0.0'; --
 -- ddl-end --
 COMMENT ON EXTENSION postgis IS E'PostGIS geometry, geography, and raster spatial types and functions';
 -- ddl-end --
 
 -- object: public.vertex_vertex_id_seq | type: SEQUENCE --
--- DROP SEQUENCE IF EXISTS public.vertex_vertex_id_seq CASCADE;
+DROP SEQUENCE IF EXISTS public.vertex_vertex_id_seq CASCADE;
 CREATE SEQUENCE public.vertex_vertex_id_seq
 	INCREMENT BY 1
 	MINVALUE 1
@@ -97,10 +97,10 @@ ALTER SEQUENCE public.vertex_vertex_id_seq OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.vertex | type: TABLE --
--- DROP TABLE IF EXISTS public.vertex CASCADE;
+DROP TABLE IF EXISTS public.vertex CASCADE;
 CREATE TABLE public.vertex (
 	vertex_id uuid NOT NULL DEFAULT uuid_generate_v4(),
-	"position" geometry(POINT),
+	position geometry(POINT),
 	posegraph_id_posegraph uuid,
 	CONSTRAINT vertex_pk PRIMARY KEY (vertex_id)
 );
@@ -111,7 +111,7 @@ ALTER TABLE public.vertex ENABLE ROW LEVEL SECURITY;
 -- ddl-end --
 
 -- object: public.camera | type: TABLE --
--- DROP TABLE IF EXISTS public.camera CASCADE;
+DROP TABLE IF EXISTS public.camera CASCADE;
 CREATE TABLE public.camera (
 	sensor_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	camera_id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -127,7 +127,7 @@ ALTER TABLE public.camera OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.camera_rig | type: TABLE --
--- DROP TABLE IF EXISTS public.camera_rig CASCADE;
+ DROP TABLE IF EXISTS public.camera_rig CASCADE;
 CREATE TABLE public.camera_rig (
 	camera_rig_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	description character varying,
@@ -138,7 +138,7 @@ ALTER TABLE public.camera_rig OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.imu | type: TABLE --
--- DROP TABLE IF EXISTS public.imu CASCADE;
+DROP TABLE IF EXISTS public.imu CASCADE;
 CREATE TABLE public.imu (
 	sensor_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 -- 	topic character varying,
@@ -152,7 +152,7 @@ ALTER TABLE public.imu OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.edge_edge_id_seq | type: SEQUENCE --
--- DROP SEQUENCE IF EXISTS public.edge_edge_id_seq CASCADE;
+DROP SEQUENCE IF EXISTS public.edge_edge_id_seq CASCADE;
 CREATE SEQUENCE public.edge_edge_id_seq
 	INCREMENT BY 1
 	MINVALUE 1
@@ -167,7 +167,7 @@ ALTER SEQUENCE public.edge_edge_id_seq OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.edge | type: TABLE --
--- DROP TABLE IF EXISTS public.edge CASCADE;
+DROP TABLE IF EXISTS public.edge CASCADE;
 CREATE TABLE public.edge (
 	edge_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	"T_A_B" double precision[] DEFAULT '{1,0,0,0,0,0,0}'::double precision[],
@@ -183,7 +183,7 @@ ALTER TABLE public.edge OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.posegraph | type: TABLE --
--- DROP TABLE IF EXISTS public.posegraph CASCADE;
+DROP TABLE IF EXISTS public.posegraph CASCADE;
 CREATE TABLE public.posegraph (
 	posegraph_id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	description character varying,
@@ -194,7 +194,7 @@ ALTER TABLE public.posegraph OWNER TO postgres;
 -- ddl-end --
 
 -- object: public.postgis_test | type: TABLE --
--- DROP TABLE IF EXISTS public.postgis_test CASCADE;
+DROP TABLE IF EXISTS public.postgis_test CASCADE;
 CREATE TABLE public.postgis_test (
 	id uuid NOT NULL DEFAULT uuid_generate_v4(),
 	point geometry(POINT),
@@ -205,7 +205,7 @@ ALTER TABLE public.postgis_test OWNER TO postgres;
 -- ddl-end --
 
 -- object: posegraph_fk | type: CONSTRAINT --
--- ALTER TABLE public.sensor DROP CONSTRAINT IF EXISTS posegraph_fk CASCADE;
+ALTER TABLE public.sensor DROP CONSTRAINT IF EXISTS posegraph_fk CASCADE;
 ALTER TABLE public.sensor ADD CONSTRAINT posegraph_fk FOREIGN KEY (posegraph_id_posegraph)
 REFERENCES public.posegraph (posegraph_id) MATCH FULL
 ON DELETE SET NULL ON UPDATE CASCADE;
@@ -219,14 +219,14 @@ ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: camera_rig_fk | type: CONSTRAINT --
--- ALTER TABLE public.camera DROP CONSTRAINT IF EXISTS camera_rig_fk CASCADE;
+ALTER TABLE public.camera DROP CONSTRAINT IF EXISTS camera_rig_fk CASCADE;
 ALTER TABLE public.camera ADD CONSTRAINT camera_rig_fk FOREIGN KEY (camera_rig_id_camera_rig)
 REFERENCES public.camera_rig (camera_rig_id) MATCH FULL
 ON DELETE SET NULL ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: posegraph_fk | type: CONSTRAINT --
--- ALTER TABLE public.edge DROP CONSTRAINT IF EXISTS posegraph_fk CASCADE;
+ALTER TABLE public.edge DROP CONSTRAINT IF EXISTS posegraph_fk CASCADE;
 ALTER TABLE public.edge ADD CONSTRAINT posegraph_fk FOREIGN KEY (posegraph_id_posegraph)
 REFERENCES public.posegraph (posegraph_id) MATCH FULL
 ON DELETE SET NULL ON UPDATE CASCADE;

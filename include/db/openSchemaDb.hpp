@@ -21,7 +21,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     oatpp::orm::SchemaMigration migration(executor);
     setEnabledInterpretations({"postgresql", "postgis"});
     migration.addFile(1 /* start from version 1 */,
-                      "/workspaces/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
+                      "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
     // TODO - Add more migrations here.
@@ -38,14 +38,35 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         "RETURNING *;",
         PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph))
 
-  // create a vertex TODO! ONLY WORKS WITH (HARDCODED) NATURAL NUMBERS ...
+  // create a vertex TODO! THIS DOESN'T WORK! SOMEWHERE IN THE PARSING, AN 0x00 NULL IS INTRODUCED??
   QUERY(createVertex,
         "INSERT INTO vertex (position, posegraph_id_posegraph) "
         "VALUES "
-        "(:vertex.position, :posegraph.posegraph_id) "
+        "(ST_GeomFromText(:vertex.position, :SRID), :posegraph.posegraph_id) "
         "RETURNING *;",
         PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
-        PARAM(oatpp::Object<VertexDto>, vertex))
+        PARAM(oatpp::Object<VertexDto>, vertex),
+        PARAM(oatpp::UInt16, SRID))
+
+    QUERY(createVertexFromString,
+          "INSERT INTO vertex (position, posegraph_id_posegraph) "
+          "VALUES "
+          "(ST_GeomFromText(:vertexPositionString, :SRID), :posegraph.posegraph_id) "
+          "RETURNING *;",
+          PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
+          PARAM(oatpp::String, vertexPositionString),
+          PARAM(oatpp::UInt16, SRID))
+
+
+/*
+    QUERY(createVertex,
+          "INSERT INTO vertex (position, posegraph_id_posegraph) "
+          "VALUES "
+          "(:vertex, :posegraph.posegraph_id) "
+          "RETURNING *;",
+          PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
+          PARAM(oatpp::String, vertex))
+*/
 
   QUERY(createIMU,
         "INSERT INTO imu"
