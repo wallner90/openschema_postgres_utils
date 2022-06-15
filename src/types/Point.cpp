@@ -65,9 +65,10 @@ const oatpp::ClassId Point::CLASS_ID("oatpp::postgresql::Point");
 oatpp::Type* Point::createType() {
   oatpp::Type::Info info;
   info.interpretationMap = {{"postgresql", new Inter()}};
+
   std::cout
       << "CALLED createType(), returning type generated with CLASS_ID.name: "
-      << Point::CLASS_ID.name << std::endl;
+      << Point::CLASS_ID.name << ", CLASS_ID.id:" << Point::CLASS_ID.id << std::endl;
   return new oatpp::Type(Point::CLASS_ID, info);
 }
 

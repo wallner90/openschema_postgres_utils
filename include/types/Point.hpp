@@ -105,10 +105,31 @@ class Point {
     }
 
     type::Point reproduce(const oatpp::String& value) const override {
-      std::cout << "CALLED reproduce(), with string to parse (value):  "
-                << value->c_str() << std::endl
-                << "[WIP] returning (0,0) atm. TODO." << std::endl;
-      return std::make_shared<PointObject>(0, 0);
+        // TODO - all of this is ugly and there most likely is a way better way
+        // "pre-process" ST_asText output for POINT type to keep only coordinates
+        std::string tmp(value);
+        tmp.erase(tmp.find("POINT("), 6);
+        tmp.erase(tmp.length()-1, 1);
+
+        // parse remaining coordinate string
+        size_t pos = 0;
+        std::string token;
+        std::vector<Float32> coords;
+        while ((pos = tmp.find(" ")) != std::string::npos) {
+            token = tmp.substr(0, pos);
+            tmp.erase(0, pos + 1);
+            coords.emplace_back(std::stof(token));
+        }
+        coords.emplace_back(std::stof(tmp));
+
+        // create point object
+        PointObject pt(coords[0], coords[1]);
+
+        std::cout << "CALLED reproduce(), with string to parse (value):  "
+                  << value->c_str() << " PARSED TO "
+                  << pt.toString()->c_str() << std::endl;
+
+        return std::make_shared<PointObject>(pt);
     }
   };
 
