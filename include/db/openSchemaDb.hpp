@@ -53,13 +53,13 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
           "INSERT INTO vertex (position, posegraph_id_posegraph) "
           "VALUES "
           "(ST_GeomFromText(:vertexPositionString, :SRID), :posegraph.posegraph_id) "
-          "RETURNING CAST(ST_AsText(position) AS VARCHAR) AS position, posegraph_id_posegraph",
+          "RETURNING ST_AsText(position) AS position, posegraph_id_posegraph",
           PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
           PARAM(oatpp::String, vertexPositionString),
           PARAM(oatpp::UInt16, SRID))
 
     QUERY(getallVertices,
-          "SELECT CAST(ST_AsText(position) AS VARCHAR) AS position, posegraph_id_posegraph FROM vertex",
+          "SELECT ST_AsText(position) AS position, posegraph_id_posegraph FROM vertex",
           PREPARE(true)
           )
 
