@@ -30,32 +30,44 @@ int main() {
   auto main_pose_graph = oatpp::Object<PoseGraphDto>::createShared();
   main_pose_graph->description = "the main posegraph";
   // add pose graph to DB
-  auto posegraph_results = m_database->createPosegraph(main_pose_graph)->fetch<oatpp::Vector<oatpp::Object<PoseGraphDto>>>();
+  auto posegraph_results =
+      m_database->createPosegraph(main_pose_graph)
+          ->fetch<oatpp::Vector<oatpp::Object<PoseGraphDto>>>();
 
-  // create an IMU 
+  // create an IMU
   auto imu = oatpp::Object<ImuDto>::createShared();
   imu->description = "an imu";
   // add imu to DB (and add to posegraph, i.e., one posegraph has 1-n IMUs)
-  auto sensor_results = m_database->createIMU(imu, posegraph_results[0])->fetch<oatpp::Vector<oatpp::Object<ImuDto>>>();
-
+  auto sensor_results = m_database->createIMU(imu, posegraph_results[0])
+                            ->fetch<oatpp::Vector<oatpp::Object<ImuDto>>>();
 
   int numVerts = 10;
   for (int i = 0; i < numVerts; i++) {
     oatpp::postgresql::mapping::type::Point currentPoint(
         {static_cast<v_float32>(i), 0.0});
 
-    std::cout << "ADDING NEW VERTX TO POSE GRAPH " << posegraph_results[0]->posegraph_id->toString()->c_str() << std::endl;
+    std::cout << "ADDING NEW VERTX TO POSE GRAPH "
+              << posegraph_results[0]->posegraph_id->toString()->c_str()
+              << std::endl;
 
     auto currentVertex = oatpp::Object<VertexDto>::createShared();
     currentVertex->position = currentPoint;
 
     // THIS WORKS
-    auto query = m_database->createVertexFromString(posegraph_results[0], currentVertex->position->toString(), oatpp::UInt16 (4326));
+    auto vertex_results =
+        m_database
+            ->createVertexFromString(posegraph_results[0],
+                                     currentVertex->position->toString(),
+                                     oatpp::UInt16(4326))
+            ->fetch<oatpp::Vector<oatpp::Object<VertexDto>>>();
 
-    // THIS DOESNT
-    query = m_database->createVertex(posegraph_results[0], currentVertex, oatpp::UInt16 (4326));
-    if (not query->isSuccess())
-      std::cout << query->getErrorMessage()->c_str() << std::endl;
+    // std::cout << "Added vertex with ID "
+    //           << vertex_results[0]->vertex_id->toString()->c_str() << std::endl;
+
+    // // THIS DOESNT
+    // query = m_database->createVertex(posegraph_results[0], currentVertex,
+    // oatpp::UInt16 (4326)); if (not query->isSuccess())
+    //   std::cout << query->getErrorMessage()->c_str() << std::endl;
 
     if (i > 0) {
       std::cout << "adding edge between vertex #" << i - 1 << " and #" << i
@@ -63,7 +75,7 @@ int main() {
     }
   }
 
- return 0;
+  return 0;
 
   auto new_camera_rig = oatpp::Object<CameraRigDto>::createShared();
   new_camera_rig->description = std::string("TestRigFromCode");

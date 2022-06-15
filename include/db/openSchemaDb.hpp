@@ -21,7 +21,7 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
     oatpp::orm::SchemaMigration migration(executor);
     setEnabledInterpretations({"postgresql", "postgis"});
     migration.addFile(1 /* start from version 1 */,
-                      "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
+                      "/workspaces/openschema_postgres_utils/sql/db_schema_postGIS_fixed.sql");
     // migration.addFile(2 /* start from version 1 */,
     // "/home/ernst/Documents/Iviso/_OpenSCHEMA/openschema_postgres_utils/sql/002_fill.sql");
     // TODO - Add more migrations here.

@@ -89,7 +89,8 @@ class PointObject {
 /**
  * Point type to store Point data.
  */
-typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point> Point;
+typedef oatpp::data::mapping::type::Primitive<PointObject, __class::Point>
+    Point;
 
 namespace __class {
 
@@ -97,14 +98,16 @@ class Point {
  public:
   class Inter : public oatpp::Type::Interpretation<type::Point, oatpp::String> {
    public:
-      oatpp::String interpret(const type::Point& value) const override {
-          std::cout << "PASSING " << value->toString()->c_str() << std::endl;
-          return value->toString();
+    oatpp::String interpret(const type::Point& value) const override {
+      std::cout << "CALLED interpret(), with Point to convert (value):  "
+                << value->toString()->c_str() << std::endl;
+      return value->toString();
     }
 
     type::Point reproduce(const oatpp::String& value) const override {
-      // std::cout << value->c_str() << std::endl;
-      (void)value;
+      std::cout << "CALLED reproduce(), with string to parse (value):  "
+                << value->c_str() << std::endl
+                << "[WIP] returning (0,0) atm. TODO." << std::endl;
       return std::make_shared<PointObject>(0, 0);
     }
   };
