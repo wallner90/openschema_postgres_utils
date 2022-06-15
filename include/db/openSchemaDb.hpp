@@ -48,10 +48,12 @@ class OpenSchemaDb : public oatpp::orm::DbClient {
         PARAM(oatpp::Object<VertexDto>, vertex),
         PARAM(oatpp::UInt16, SRID))
 
+    // don't forget to give the returned values the right name, otherwise oat++ will see wrong column names ("st_asttext") and not know what to do with them
     QUERY(createVertexFromString,
           "INSERT INTO vertex (position, posegraph_id_posegraph) "
           "VALUES "
-          "(ST_GeomFromText(:vertexPositionString, :SRID), :posegraph.posegraph_id) ",
+          "(ST_GeomFromText(:vertexPositionString, :SRID), :posegraph.posegraph_id) "
+          "RETURNING CAST(ST_AsText(position) AS VARCHAR) AS position, posegraph_id_posegraph",
           PREPARE(true), PARAM(oatpp::Object<PoseGraphDto>, posegraph),
           PARAM(oatpp::String, vertexPositionString),
           PARAM(oatpp::UInt16, SRID))

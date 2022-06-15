@@ -58,10 +58,8 @@ int main() {
         m_database
             ->createVertexFromString(posegraph_results[0],
                                      currentVertex->position->toString(),
-                                     oatpp::UInt16(4326));
-
-    // SELECT VERTICES AS TEXT
-    auto vertex_result = m_database->getallVertices()->fetch<oatpp::Vector<oatpp::Object<VertexDto>>>();
+                                     oatpp::UInt16(4326))
+            ->fetch<oatpp::Vector<oatpp::Object<VertexDto>>>();
 
 
     // std::cout << "Added vertex with ID "
