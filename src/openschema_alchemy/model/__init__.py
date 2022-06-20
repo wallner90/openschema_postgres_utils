@@ -88,7 +88,10 @@ class Edge(Base):
         UniqueConstraint('from_vertex_id', 'to_vertex_id', name="unique_edge")
     )
 
-    from_vertex = relationship('Vertex', foreign_keys=[from_vertex_id], backref='from_vertex')
-    to_vertex = relationship('Vertex', foreign_keys=[to_vertex_id], backref='to_vertex')
+    # Example to get any vertices (to or from) with backref in Vertex all edges
+    vertices = relationship('Vertex', primaryjoin="or_(Vertex.id == foreign(Edge.from_vertex_id), Vertex.id == foreign(Edge.to_vertex_id))", backref='edges')
+    # Simple relationship to get the vertex associated with id with custom field name.
+    from_vertex = relationship('Vertex', foreign_keys=[from_vertex_id], backref='from_edges')
+    to_vertex = relationship('Vertex', foreign_keys=[to_vertex_id], backref='to_edges')
 
 # TODO: Check backref and lazy stuff
