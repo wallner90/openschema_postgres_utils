@@ -24,13 +24,17 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo 
 
 # [Optional] Uncomment this section to install additional packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install libboost-all-dev \
+    && apt-get -y install libboost-all-dev python3-pip \
+                          aptitude vim \
                           lcov doxygen \
                           libpqxx-dev \
                           postgresql postgresql-contrib \ 
                           libpq-dev postgresql-server-dev-all \
                           libpdal-plugin-pgpointcloud postgresql postgis qgis  \
 
+
     && apt-get autoremove -y -qq \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install SQLAlchemy GeoAlchemy2 GeoPandas fiona pyproj rtree shapely
 
