@@ -34,3 +34,7 @@
 
 # Build directory
 build/
+
+# Python
+*.pyc
+__pycache__
