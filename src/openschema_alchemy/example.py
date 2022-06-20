@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.schema import CreateSchema
 
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geometry, func
 
 from sqlalchemy.orm import sessionmaker
 
@@ -32,17 +32,20 @@ posegraph.sensors = [imu]
 
 # or the other way round
 
-vertices = [
-    Vertex(position=f'POINTZ(0 0 {i})', posegraph=posegraph) for i in range(3)]
+num_vertices = 500
 
-edges = [Edge(from_vertex=vertices[0], to_vertex=vertices[1]),
-         Edge(from_vertex=vertices[1], to_vertex=vertices[0]),
-         Edge(from_vertex=vertices[0], to_vertex=vertices[2]),
-         Edge(from_vertex=vertices[2], to_vertex=vertices[1])]
+vertices = [
+    Vertex(position=f'POINTZ({2*i} {3*i} {i})', posegraph=posegraph) for i in range(num_vertices)]
+
+edges = [Edge(from_vertex=vertices[i],
+              to_vertex=vertices[(i+1) % num_vertices]) for i in range(num_vertices)]
 
 session = Session()
 session.add_all([posegraph, imu, *vertices, *edges])
 session.commit()
 
 
-print(f'{vertex}' for vertex in vertices)
+for edge in edges:
+    dist = session.query(func.ST_Distance(
+        edge.from_vertex.position, edge.to_vertex.position)).one()
+    print(f"Edge {edge} has length {dist}m.")
