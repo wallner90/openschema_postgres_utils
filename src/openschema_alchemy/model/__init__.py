@@ -16,7 +16,7 @@ class Sensor(Base):
     __tablename__ = 'sensor'
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text('uuid_generate_v4()'))
-    topic = Column(String, unique=True)
+    topic = Column(String)
     description = Column(String)
     type = Column(String(16))
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey('posegraph.id'))
@@ -25,6 +25,11 @@ class Sensor(Base):
         "polymorphic_identity": "sensor",
         "polymorphic_on": type,
     }
+
+    __table_args__ = (
+        UniqueConstraint('posegraph_id', 'topic',
+                         name="unique_sensor_topic_in_posegraph"),
+    )
 
 
 class IMU(Sensor):
@@ -58,10 +63,11 @@ class PoseGraph(Base):
     __tablename__ = "posegraph"
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text('uuid_generate_v4()'))
-    description = Column(String, unique=True)
+    description = Column(String)
 
     sensors = relationship("Sensor", backref='posegraph')
     vertices = relationship("Vertex", backref='posegraph')
+
 
 class Vertex(Base):
     __tablename__ = "vertex"
@@ -69,10 +75,12 @@ class Vertex(Base):
                 server_default=text('uuid_generate_v4()'))
     position = Column(Geometry('POINTZ'))
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey('posegraph.id'))
+
     __table_args__ = (
         UniqueConstraint('position', 'posegraph_id',
                          name="unique_vertex_posegraph"),
     )
+
 
 class Edge(Base):
     __tablename__ = "edge"
@@ -83,15 +91,19 @@ class Edge(Base):
     from_vertex_id = Column(UUID(as_uuid=True), ForeignKey('vertex.id'))
     to_vertex_id = Column(UUID(as_uuid=True), ForeignKey('vertex.id'))
 
+    # Example to get any vertices (to or from) with backref in Vertex all edges
+    vertices = relationship(
+        'Vertex', primaryjoin="or_(Vertex.id == foreign(Edge.from_vertex_id), Vertex.id == foreign(Edge.to_vertex_id))", backref='edges')
+    # Simple relationship to get the vertex associated with id with custom field name.
+    from_vertex = relationship('Vertex', foreign_keys=[
+                               from_vertex_id], backref='from_edges')
+    to_vertex = relationship('Vertex', foreign_keys=[
+                             to_vertex_id], backref='to_edges')
+
     __table_args__ = (
         CheckConstraint("from_vertex_id != to_vertex_id", name="no_loop_edge"),
         UniqueConstraint('from_vertex_id', 'to_vertex_id', name="unique_edge")
     )
 
-    # Example to get any vertices (to or from) with backref in Vertex all edges
-    vertices = relationship('Vertex', primaryjoin="or_(Vertex.id == foreign(Edge.from_vertex_id), Vertex.id == foreign(Edge.to_vertex_id))", backref='edges')
-    # Simple relationship to get the vertex associated with id with custom field name.
-    from_vertex = relationship('Vertex', foreign_keys=[from_vertex_id], backref='from_edges')
-    to_vertex = relationship('Vertex', foreign_keys=[to_vertex_id], backref='to_edges')
 
 # TODO: Check backref and lazy stuff

@@ -17,13 +17,13 @@ from openschema_alchemy.model import *
 #       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 # TODO check lazy.
-engine = create_engine('postgresql://postgres:postgres@localhost:5432/postgres_alchemy', echo=True)
+engine = create_engine(
+    'postgresql://postgres:postgres@localhost:5432/postgres_alchemy', echo=True)
 if not engine.dialect.has_schema(engine, 'public'):
     engine.execute(CreateSchema('public'))
 Session = sessionmaker(bind=engine)
 
 Base.metadata.create_all(engine)
-
 
 posegraph = PoseGraph(description='Test graph')
 
@@ -32,17 +32,17 @@ posegraph.sensors = [imu]
 
 # or the other way round
 
-vertex = [ Vertex(position=f'POINTZ(0 0 {i})', posegraph=posegraph)  for i in range(3)]
+vertices = [
+    Vertex(position=f'POINTZ(0 0 {i})', posegraph=posegraph) for i in range(3)]
 
-edge = Edge(from_vertex=vertex[0], to_vertex=vertex[1])
-edge2 = Edge(from_vertex=vertex[1], to_vertex=vertex[0])
-edge3 = Edge(from_vertex=vertex[0], to_vertex=vertex[2])
-edge4 = Edge(from_vertex=vertex[2], to_vertex=vertex[1])
-
+edges = [Edge(from_vertex=vertices[0], to_vertex=vertices[1]),
+         Edge(from_vertex=vertices[1], to_vertex=vertices[0]),
+         Edge(from_vertex=vertices[0], to_vertex=vertices[2]),
+         Edge(from_vertex=vertices[2], to_vertex=vertices[1])]
 
 session = Session()
-
-session.add_all([posegraph, imu, *vertex, edge, edge2, edge3, edge4])
+session.add_all([posegraph, imu, *vertices, *edges])
 session.commit()
 
-print(vertex)
+
+print(f'{vertex}' for vertex in vertices)
