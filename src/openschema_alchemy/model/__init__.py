@@ -1,11 +1,12 @@
 import enum
-from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Enum, Integer, PrimaryKeyConstraint, Table, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON, TIMESTAMP
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.dialects.postgresql import UUID
 from geoalchemy2 import Geometry
 
-from sqlalchemy.dialects.postgresql import UUID, array, DOUBLE_PRECISION
 
 Base = declarative_base()
+
 
 class SensorType(enum.Enum):
     Camera = 'Camera'
@@ -14,8 +15,7 @@ class SensorType(enum.Enum):
     RADAR = 'RADAR'
     GNSS = 'GNSS'
     GenericAbsolute = 'GenericAbsolute'
-# Currently no direct implemented way for postgres inherits.
-# https://docs.sqlalchemy.org/en/14/orm/inheritance.html#joined-table-inheritance
+
 
 class Sensor(Base):
     __tablename__ = 'sensor'
@@ -26,8 +26,41 @@ class Sensor(Base):
                 server_default=text('uuid_generate_v4()'))
     name = Column(String)
     description = Column(JSON)
-    type = Column(Enum(SensorType), comment='Type of sensor (e.g., camera, imu, lidar).')
+    type = Column(Enum(SensorType),
+                  comment='Type of sensor (e.g., camera, imu, lidar).')
     sensor_rig_id = Column(UUID(as_uuid=True), ForeignKey('sensor_rig.id'))
+
+    __mapper_args__ = {
+        "polymorphic_identity": 'sensor',
+        "polymorphic_on": type,
+    }
+
+
+class Camera(Sensor):
+    __tablename__ = 'camera'
+    id = Column(UUID(as_uuid=True), ForeignKey(
+        "sensor.id"), primary_key=True)
+    __mapper_args__ = {
+        "polymorphic_identity": SensorType.Camera,
+    }
+
+
+class IMU(Sensor):
+    __tablename__ = 'imu'
+    id = Column(UUID(as_uuid=True), ForeignKey(
+        "sensor.id"), primary_key=True)
+    __mapper_args__ = {
+        "polymorphic_identity": SensorType.IMU,
+    }
+
+
+class Lidar(Sensor):
+    __tablename__ = 'lidar'
+    id = Column(UUID(as_uuid=True), ForeignKey(
+        "sensor.id"), primary_key=True)
+    __mapper_args__ = {
+        "polymorphic_identity": SensorType.LIDAR,
+    }
 
 
 class SensorRig(Base):
@@ -88,14 +121,22 @@ class Pose(Base):
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey('posegraph.id'))
 
 
+class ObservationType(enum.Enum):
+    Camera = str(SensorType.Camera)
+    IMU = str(SensorType.IMU)
+    LIDAR = str(SensorType.LIDAR)
+    RADAR = str(SensorType.RADAR)
+    GNSS = str(SensorType.GNSS)
+    GenericAbsolute = str(SensorType.GenericAbsolute)
+    Semantic = 'Semantic'
+
+
 class Observation(Base):
     __tablename__ = 'observation'
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text('uuid_generate_v4()'))
     pose_id = Column(UUID(as_uuid=True), ForeignKey('pose.id'))
-    type = Column(String)
-    sensor_id = Column(UUID(as_uuid=True), ForeignKey(
-        'sensor.id'), comment='Null for manual observations, i.e., POIs from given map.')
+    type = Column(Enum(ObservationType))
     create_time = Column(TIMESTAMP)
     updated_time = Column(TIMESTAMP)
 
@@ -104,16 +145,12 @@ class Observation(Base):
         "polymorphic_on": type,
     }
 
-    # __table_args__ = (
-    #     ## TODO: Check constrain: Sensor_id must exist in post_graph's sensor rig
-    #     CheckConstraint('sensor != to_vertex_id', name='no_loop_edge'),
-    # )
-
 
 class CameraObservation(Observation):
     __tablename__ = 'camera_observation'
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey('camera.id'))
     algorithm = Column(String)
     algorithm_settings = Column(
         JSON, comment='Algorithm specific settings, e.g., scale levels, thresholds, BoW description, etc.')
@@ -125,11 +162,17 @@ class CameraObservation(Observation):
         "polymorphic_identity": "camera_observation"
     }
 
+    # __table_args__ = (
+    #     ## TODO: Check constrain: Sensor_id must exist in post_graph's sensor rig
+    #     CheckConstraint("sensor.type == 'Camera'", name='test_constraint'),
+    # )
+
 
 class LidarObservation(Observation):
     __tablename__ = 'lidar_observation'
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey('lidar.id'))
     # algorithm = Column(String)
     # algorithm_settings = Column(
     #     JSON, comment='Algorithm specific settings, e.g., scale levels, thresholds, etc.')
@@ -149,6 +192,8 @@ class SemanticObservation(Observation):
     __tablename__ = 'semantic_observation'
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey(
+        'sensor.id'), comment='Null if manual entry and not derived from sensor data.')
     algorithm = Column(String)
     algorithm_settings = Column(
         JSON, comment='Algorithm specific settings for data interpretation.')
@@ -161,14 +206,17 @@ class SemanticObservation(Observation):
         "polymorphic_identity": "semantic_observation"
     }
 
+
 class IMUObservation(Observation):
     __tablename__ = 'imu_observation'
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey('imu.id'))
     algorithm = Column(String)
     algorithm_settings = Column(
         JSON, comment='E.g., filter settings, integration options, etc.')
-    data = Column(JSON, comment='E.g., single sample, multiple samples, or integrated pose delta.')
+    data = Column(
+        JSON, comment='E.g., single sample, multiple samples, or integrated pose delta.')
     # __table_args__ = (
     #     ## TODO: Check constrain: sensor needs to be a lidar
     #     CheckConstraint('sensor != to_vertex_id', name='no_loop_edge'),
@@ -177,7 +225,6 @@ class IMUObservation(Observation):
     __mapper_args__ = {
         "polymorphic_identity": "imu_observation"
     }
-
 
 
 class CameraKeypoint(Base):
