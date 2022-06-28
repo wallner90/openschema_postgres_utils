@@ -162,6 +162,7 @@ class Pose(Base):
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey("posegraph.id"), nullable=False)
 
     parent = relationship("Pose", backref="children", remote_side=[id])
+    observations = relationship("Observation", backref="pose")
 
 
 class ObservationType(enum.Enum):
@@ -174,6 +175,11 @@ class ObservationType(enum.Enum):
     Pose = SensorType.Pose.value
     Semantic = "semantic"
 
+def observation_to_sensor_type(type: ObservationType) -> str:
+    if type == ObservationType.Semantic:
+        return 'Sensor'
+    else:
+        return type.name
 
 def observation_table_name(type: ObservationType) -> str:
     return f"{type.value}_{ObservationType.Observation.value}"
@@ -187,6 +193,8 @@ class Observation(Base):
     created_at = Column(TIMESTAMP(precision=6), nullable=False)
     updated_at = Column(TIMESTAMP(precision=6), nullable=False)
 
+    # TODO: howto sensor, pointing to type dependent class?
+    # sensor = relationship("", backref="pose")
     __mapper_args__ = {
         "polymorphic_identity": ObservationType.Observation,
         "polymorphic_on": type,
