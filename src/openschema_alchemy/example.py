@@ -47,12 +47,13 @@ for i in poses[1:]:
     i.parent = poses[0]
 
 time_delta = timedelta(milliseconds=33)
-# observations = [CameraObservation(
-#                 created_at=time_delta*i,
-#                 updated_at=time_delta*i, pose=p)
-#               for i, p in enumerate(poses)
-#               ]
-# TODO: Observations
+observations = [CameraObservation(
+                created_at=ts + time_delta*i,
+                updated_at=ts + time_delta*i, pose=p,
+                sensor=camera,
+                camera=camera)
+              for i, p in enumerate(poses)
+              ]
 # TODO: Landmarks
 # TODO: Semantic info
 
