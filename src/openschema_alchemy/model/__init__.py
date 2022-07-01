@@ -295,6 +295,9 @@ class CameraKeypoint(Base):
         JSON, comment="Descriptor (algorithm specific) with needed extra info (e.g., disparity, octave, depth, angle, semantics,...).")
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
+    landmark = relationship('Landmark', backref='camera_keypoints')
+    camera_observation = relationship('CameraObservation', backref='camera_keypoints')
+
 class LIDARKeypoint(Base):
     __tablename__ = "lidar_keypoint"
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -307,6 +310,9 @@ class LIDARKeypoint(Base):
         JSON, comment="Descriptor (sensor specific), e.g. RSSI, semantics, etc..")
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
+    landmark = relationship('Landmark', backref='lidar_keypoints')
+    lidar_observation = relationship('LIDARObservation', backref='lidar_keypoints')
+
 class SemanticKeypoint(Base):
     __tablename__ = "semantic_keypoint"
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -318,6 +324,9 @@ class SemanticKeypoint(Base):
     descriptor = Column(
         JSON, comment="Descriptor (algorithm / detctor specific), e.g. class (Palette, House, Agent, ...), stability, etc..")
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
+
+    landmark = relationship('Landmark', backref='semantic_keypoints')
+    semantic_observation = relationship('SemanticObservation', backref='semantic_keypoints')
 
 # A manual/virtual landmark may be attached to another observed landmark or it may be have it's own observation
 # relatively attached to a pose via the semantic keypoint or the landmark just exists independently
