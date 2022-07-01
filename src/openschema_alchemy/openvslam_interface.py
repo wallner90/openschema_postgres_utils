@@ -39,7 +39,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     camera_name = list(loaded_data["cameras"].keys())[0]
 
     sensor_rig = SensorRig(name=camera_name+" Rig",
-                           description={'T': [0.0]*12})
+                           description={"T": [0.0]*12})
     camera = Camera(name=camera_name, description={
                     "openVSLAM_config": loaded_data["cameras"][camera_name]}, sensor_rig=sensor_rig)
 
@@ -51,14 +51,37 @@ with open(msg_pack_file_path, "rb") as data_file:
                    "Some_generic_setting": 0.2})
     sensor_rig.posegraph = pg
 
-    landmarks = []
+    landmarks = {}
     # Add landmarks
-    for landmark_key in list(loaded_data['landmarks'].keys()):
-        landmark_msgpack = loaded_data['landmarks'][landmark_key]
-        landmakr_pos_w = landmark_msgpack['pos_w']
-        lm = Landmark(
-            position=f"POINTZ({landmakr_pos_w[0]} {landmakr_pos_w[1]} {landmakr_pos_w[2]})")
-        landmarks.append(lm)
+    for landmark_id in list(loaded_data["landmarks"].keys()):
+        landmark_msgpack = loaded_data["landmarks"][landmark_id]
+        landmark_pos_w = landmark_msgpack["pos_w"]
+
+        landmarks[int(landmark_id)] = Landmark(
+            position=f"POINTZ({landmark_pos_w[0]} {landmark_pos_w[1]} {landmark_pos_w[2]})")
+
+    camera_keypoints = []
+    # Add keypoints
+    # go over all keyframes
+    for keyframe_id in list(loaded_data["keyframes"].keys()):
+        keyframe_msgpack = loaded_data["keyframes"][keyframe_id]
+        keypts_msgpack = keyframe_msgpack["keypts"]
+        lm_ids_msgpack = keyframe_msgpack["lm_ids"]
+        descriptors_msgpack = keyframe_msgpack["descs"]
+        depths_msgpack = keyframe_msgpack["depths"]
+        x_rights = keyframe_msgpack["x_rights"]
+
+        for keypt, lm_id, descriptor, depths, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights):
+            ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][0]})",
+                                 descriptor=descriptor)
+            if lm_id != -1 and int(lm_id) in landmarks.keys():
+                ckp.landmark = landmarks[int(lm_id)]
+            camera_keypoints.append(ckp)
+
+
+    session = Session()
+    session.add_all([newmap, pg, sensor_rig, camera, *landmarks.values(), *camera_keypoints])
+    session.commit()
 
     # for _, landmarkr_msgpack in loaded_data['landmarks']:
     #     print(landmarkr_msgpack)
@@ -75,8 +98,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     # # TODO: Landmarks
     # # TODO: Semantic info
 
-    session = Session()
-    session.add_all([newmap, pg, sensor_rig, camera] + poses)
-    session.commit()
+    # session = Session()
+    # session.add_all([newmap, pg, sensor_rig, camera] + poses)
+    # session.commit()
 
-    session.commit()
