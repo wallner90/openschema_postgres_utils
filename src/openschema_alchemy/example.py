@@ -9,7 +9,7 @@ from geoalchemy2 import Geometry, func
 from sqlalchemy.orm import sessionmaker
 
 from openschema_alchemy.model import *
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # TODO: Before use pgterm later maybe with sqlalchemy utils
 #       CREATE DATABASE IF NOT EXISTS postgres_alchemy_ait;
@@ -46,12 +46,19 @@ poses = [Pose(position=f'POINTZ({2*i} {3*i} {i})', posegraph=pg) for i in range(
 for i in poses[1:]:
     i.parent = poses[0]
 
-# TODO: Observations
+time_delta = timedelta(milliseconds=33)
+observations = [CameraObservation(
+                created_at=ts + time_delta*i,
+                updated_at=ts + time_delta*i, pose=p,
+                sensor=camera,
+                camera=camera)
+              for i, p in enumerate(poses)
+              ]
 # TODO: Landmarks
 # TODO: Semantic info
 
 session = Session()
-session.add_all([newmap, pg, sensor_rig, camera] + poses)
+session.add_all([newmap, pg, sensor_rig, camera] + poses + observations)
 session.commit()
 
 session.commit()

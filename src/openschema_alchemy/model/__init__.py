@@ -1,6 +1,6 @@
 import enum
-from sqlalchemy import Enum, Integer, PrimaryKeyConstraint, Table, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Enum, Integer, PrimaryKeyConstraint, Table, ForeignKeyConstraint, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
+from sqlalchemy.orm import declarative_base, relationship, reconstructor
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
 from geoalchemy2 import Geometry
@@ -81,7 +81,7 @@ class IMU(Sensor):
     }
 
 
-class Lidar(Sensor):
+class LIDAR(Sensor):
     __tablename__ = SensorType.LIDAR.value
     id = Column(UUID(as_uuid=True), ForeignKey(
         "sensor.id"), primary_key=True)
@@ -162,6 +162,7 @@ class Pose(Base):
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey("posegraph.id"), nullable=False)
 
     parent = relationship("Pose", backref="children", remote_side=[id])
+    observations = relationship("Observation", backref="pose")
 
 
 class ObservationType(enum.Enum):
@@ -174,6 +175,11 @@ class ObservationType(enum.Enum):
     Pose = SensorType.Pose.value
     Semantic = "semantic"
 
+def observation_to_sensor_type(type: ObservationType) -> str:
+    if type == ObservationType.Semantic:
+        return 'Sensor'
+    else:
+        return type.name
 
 def observation_table_name(type: ObservationType) -> str:
     return f"{type.value}_{ObservationType.Observation.value}"
@@ -182,10 +188,21 @@ class Observation(Base):
     __tablename__ = ObservationType.Observation.value
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
+    # Allowing this redundancy will allow us to use relationship and also contrainting the sensor
+    # type via the specific joined inherit table.
+    # TODO: check if a view were better (at least as long it is no foreign key, does not work with views).
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"))
     pose_id = Column(UUID(as_uuid=True), ForeignKey("pose.id"))
     type = Column(Enum(ObservationType))
     created_at = Column(TIMESTAMP(precision=6), nullable=False)
     updated_at = Column(TIMESTAMP(precision=6), nullable=False)
+
+    algorithm = Column(String)
+    algorithm_settings = Column(
+        JSON, comment="Algorithm specific settings depends on actual data and observation type, "
+            "e.g., scale levels, thresholds, BoW description, filter settings, semantic flags, etc.")
+
+    sensor = relationship("Sensor", backref="observations")
 
     __mapper_args__ = {
         "polymorphic_identity": ObservationType.Observation,
@@ -193,29 +210,33 @@ class Observation(Base):
     }
 
     __table_args__ = (
+        UniqueConstraint("id", "sensor_id", name="observation_sensor_is_unique"),
         CheckConstraint("updated_at >= created_at ", name="map_must_be_created_before_updated"),
         CheckConstraint(f"type != '{ObservationType.Observation.name}'", name="observation_is_abstract"),
     )
 
-
 class CameraObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.Camera)
-    id = Column(UUID(as_uuid=True), ForeignKey(
-        "observation.id"), primary_key=True)
-    sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
-    algorithm = Column(String)
-    algorithm_settings = Column(
-        JSON, comment="Algorithm specific settings, e.g., scale levels, thresholds, BoW description, etc.")
+    id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id") ,primary_key=True)
+    camera_sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
+    camera = relationship("Camera", backref="camera_observations")
     __mapper_args__ = {
-        "polymorphic_identity": ObservationType.Camera
+        "polymorphic_identity": ObservationType.Camera,
+        "inherit_condition": Observation.id == id
     }
 
+    __table_args__ = (
+        ForeignKeyConstraint([id, camera_sensor_id], [Observation.id, Observation.sensor_id]),
+    )
 
-class LidarObservation(Observation):
+
+class LIDARObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.LIDAR)
-    id = Column(UUID(as_uuid=True), ForeignKey(
+    id = Column(UUID(as_uuid=True),  ForeignKey(
         "observation.id"), primary_key=True)
-    sensor_id = Column(UUID(as_uuid=True), ForeignKey("lidar.id"), nullable=False)
+    lidar_sensor_id = Column(UUID(as_uuid=True), ForeignKey("lidar.id"), nullable=False)
+    #sensor_id = Column(UUID(as_uuid=True), ForeignKey("lidar.id"), nullable=False)
     # algorithm = Column(String)
     # algorithm_settings = Column(
     #     JSON, comment="Algorithm specific settings, e.g., scale levels, thresholds, etc.")
@@ -226,40 +247,42 @@ class LidarObservation(Observation):
 
     # TODO: Discuss how to store lidar observations / points for map
 
+    lidar = relationship("LIDAR", backref="lidar_observations")
     __mapper_args__ = {
-        "polymorphic_identity":  ObservationType.LIDAR
+        "polymorphic_identity":  ObservationType.LIDAR,
+        "inherit_condition": Observation.id == id
     }
+    __table_args__ = (
+        ForeignKeyConstraint([id, lidar_sensor_id], [Observation.id, Observation.sensor_id]),
+    )
 
 
 class SemanticObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.Semantic)
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
-    sensor_id = Column(UUID(as_uuid=True), ForeignKey(
-        "sensor.id"), nullable=False, comment="Null if manual entry and not derived from sensor data.")
-    algorithm = Column(String)
-    algorithm_settings = Column(
-        JSON, comment="Algorithm specific settings for data interpretation.")
 
     __mapper_args__ = {
         "polymorphic_identity":  ObservationType.Semantic
     }
 
-
 class IMUObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.IMU)
     id = Column(UUID(as_uuid=True), ForeignKey(
         "observation.id"), primary_key=True)
-    sensor_id = Column(UUID(as_uuid=True), ForeignKey("imu.id"), nullable=False)
-    algorithm = Column(String)
-    algorithm_settings = Column(
-        JSON, comment="E.g., filter settings, integration options, etc.")
+    imu_sensor_id = Column(UUID(as_uuid=True), ForeignKey("imu.id"), nullable=False)
     data = Column(
         JSON, comment="E.g., single sample, multiple samples, or integrated pose delta.")
 
+    imu = relationship("IMU", backref="imu_observations")
     __mapper_args__ = {
-        "polymorphic_identity":  ObservationType.IMU
+        "polymorphic_identity":  ObservationType.IMU,
+        "inherit_condition": Observation.id == id
     }
+
+    __table_args__ = (
+        ForeignKeyConstraint([id, imu_sensor_id], [Observation.id, Observation.sensor_id]),
+    )
 
 class CameraKeypoint(Base):
     __tablename__ = "camera_keypoint"
@@ -272,7 +295,7 @@ class CameraKeypoint(Base):
         JSON, comment="Descriptor (algorithm specific) with needed extra info (e.g., disparity, octave, depth, angle, semantics,...).")
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
-class LidarKeypoint(Base):
+class LIDARKeypoint(Base):
     __tablename__ = "lidar_keypoint"
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
