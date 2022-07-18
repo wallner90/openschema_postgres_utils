@@ -211,7 +211,7 @@ class Observation(Base):
     }
 
     __table_args__ = (
-        {"comment": "Represents a (preintegrated) measurement or unary factor." },
+        # {"comment": "Represents a (preintegrated) measurement or unary factor." },
         UniqueConstraint("id", "sensor_id", name="observation_sensor_is_unique"),
         CheckConstraint("updated_at >= created_at ", name="map_must_be_created_before_updated"),
         CheckConstraint(f"type != '{ObservationType.Observation.name}'", name="observation_is_abstract"),
@@ -298,7 +298,7 @@ def edge_table_name(type: ObservationEdgeType) -> str:
 # TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
 #       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
 #       a JSON blob would capture any data.
-class ObservationEdge(Base):
+class UnaryEdge(Base):
     __tablename__ = edge_table_name(ObservationEdgeType.Unary)
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
@@ -320,8 +320,8 @@ class ObservationEdge(Base):
         {"comment": "Adds unary or n-ary association information to observations." }
     )
 
-class BetweenEdge(Base):
-    """Implements a relative pose between to other pose observations.
+class BetweenEdge(UnaryEdge):
+    """Implements a relative pose between two other pose observations.
 
     For direct measurement modalities this is similar to odometry (e.g., visual odometry).
     For cameras based on their two observation keypoints allowing to reconstruct smart factors which.
