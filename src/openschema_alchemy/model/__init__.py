@@ -140,7 +140,7 @@ class PoseGraph(Base):
 
     root_pose = relationship("Pose",
                     primaryjoin="and_(PoseGraph.id==Pose.posegraph_id, "
-                        "Pose.parent_pose_id==null())")
+                        "Pose.parent_pose_id==null())", viewonly=True)
     poses = relationship("Pose", backref="posegraph")
     sensor_rig = relationship("SensorRig", backref="posegraph")
 

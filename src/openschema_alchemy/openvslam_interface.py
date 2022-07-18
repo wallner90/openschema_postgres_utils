@@ -23,7 +23,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     # print(loaded_data)
 
     engine = create_engine(
-        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=True)
+        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=False)
     if not engine.dialect.has_schema(engine, 'public'):
         engine.execute(CreateSchema('public'))
     Session = sessionmaker(bind=engine)
@@ -60,6 +60,8 @@ with open(msg_pack_file_path, "rb") as data_file:
         landmarks[int(landmark_id)] = Landmark(
             position=f"POINTZ({landmark_pos_w[0]} {landmark_pos_w[1]} {landmark_pos_w[2]})")
 
+    poses = []
+    observations = []
     camera_keypoints = []
     # Add keypoints
     # go over all keyframes
@@ -71,34 +73,30 @@ with open(msg_pack_file_path, "rb") as data_file:
         depths_msgpack = keyframe_msgpack["depths"]
         x_rights = keyframe_msgpack["x_rights"]
 
+        trans_cw = keyframe_msgpack["trans_cw"]
+        # TODO: Calculate unit vector from quaternion and add to pose
+        pose = Pose(
+            position=f"POINTZ({trans_cw[0]} {trans_cw[1]} {trans_cw[2]})",
+            posegraph=pg)
+        poses.append(pose)
+
+        creation_time = datetime.fromtimestamp(float(keyframe_msgpack["ts"])/1000.0)
+        camera_observation = CameraObservation(
+            pose=pose, sensor=camera, camera=camera, algorithm="openVSLAM",
+            created_at = creation_time, 
+            updated_at = creation_time)
+        observations.append(camera_observation)
+
         for keypt, lm_id, descriptor, depths, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights):
             ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][0]})",
-                                 descriptor=descriptor)
+                                 descriptor=descriptor,
+                                 camera_observation=camera_observation)
             if lm_id != -1 and int(lm_id) in landmarks.keys():
                 ckp.landmark = landmarks[int(lm_id)]
             camera_keypoints.append(ckp)
 
-
     session = Session()
-    session.add_all([newmap, pg, sensor_rig, camera, *landmarks.values(), *camera_keypoints])
+    session.add_all([newmap, pg, sensor_rig, camera] +
+                    list(landmarks.values()) +
+                    camera_keypoints + poses + observations)
     session.commit()
-
-    # for _, landmarkr_msgpack in loaded_data['landmarks']:
-    #     print(landmarkr_msgpack)
-
-    # num_vertices = 500
-
-    # pg.map = newmap
-
-    # poses = [Pose(position=f"POINTZ({2*i} {3*i} {i})", posegraph=pg) for i in range(num_vertices)]
-    # for i in poses[1:]:
-    #     i.parent = poses[0]
-
-    # # TODO: Observations
-    # # TODO: Landmarks
-    # # TODO: Semantic info
-
-    # session = Session()
-    # session.add_all([newmap, pg, sensor_rig, camera] + poses)
-    # session.commit()
-
