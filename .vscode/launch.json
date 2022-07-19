@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: openVSLAM interface",
+            "name": "Python: openVSLAM msgpack to db",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_interface.py",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_msgpack_to_db.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {

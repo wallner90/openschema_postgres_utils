@@ -327,7 +327,6 @@ class UnaryEdge(Edge):
     id = Column(UUID(as_uuid=True), ForeignKey(edge_table_name(ObservationEdgeType.Edge)+".id"), primary_key=True)
     observation_id = Column(UUID(as_uuid=True),  ForeignKey(
         "observation.id"), nullable=False)
-    type = Column(Enum(ObservationEdgeType))
 
     position = Column(Geometry("POINTZ"),
                       comment="Position off associated pose")
