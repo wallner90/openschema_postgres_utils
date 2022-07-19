@@ -46,7 +46,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     newmap = Map(name=msg_pack_file_path.name + str(ts),
                  description={"T_global": [0.0]*12}, created_at=ts, updated_at=ts)
 
-    pg = PoseGraph(name="SLAM graph", description={
+    pg = PoseGraph(name="SLAM graph", map=newmap, description={
                    "Some_generic_setting": 0.2})
     sensor_rig.posegraph = pg
 

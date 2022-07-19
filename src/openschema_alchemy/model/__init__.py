@@ -223,6 +223,9 @@ class CameraObservation(Observation):
         "observation.id") ,primary_key=True)
     camera_sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
     camera = relationship("Camera", backref="camera_observations")
+
+    keypoints = relationship('CameraKeypoint', backref='camera_observations')
+
     __mapper_args__ = {
         "polymorphic_identity": ObservationType.Camera,
         "inherit_condition": Observation.id == id
