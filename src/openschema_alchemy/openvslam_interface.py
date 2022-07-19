@@ -23,7 +23,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     # print(loaded_data)
 
     engine = create_engine(
-        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=True)
+        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=False)
     if not engine.dialect.has_schema(engine, 'public'):
         engine.execute(CreateSchema('public'))
     Session = sessionmaker(bind=engine)
@@ -113,11 +113,11 @@ with open(msg_pack_file_path, "rb") as data_file:
         current_observation = observations[int(keyframe_id)]
         for child_keyframe_id in keyframe_msgpack['span_children']:
             child_observation = observations[child_keyframe_id]
-            edges.append(BetweenEdge(observation_id = current_observation.id, second_observation_id = child_observation.id))
+            edges.append(BetweenEdge(from_observation_id = current_observation.id, to_observation_id = child_observation.id))
 
         for loop_edge_id in keyframe_msgpack['loop_edges']:
             child_observation = observations[loop_edge_id]
-            edges.append(BetweenEdge(observation_id = current_observation.id, second_observation_id = child_observation.id))
+            edges.append(BetweenEdge(from_observation_id = current_observation.id, to_observation_id = child_observation.id, edge_info = {"is_edge": True}))
 
     session.add_all(edges)
     session.commit()

@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, Integer, PrimaryKeyConstraint, Table, ForeignKeyConstraint, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
+from sqlalchemy import Boolean, Enum, Integer, PrimaryKeyConstraint, Table, ForeignKeyConstraint, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
 from sqlalchemy.orm import declarative_base, relationship, reconstructor
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
@@ -285,6 +285,8 @@ class IMUObservation(Observation):
     )
 
 class ObservationEdgeType(enum.Enum):
+    # Abstract base edge
+    Edge = "abstract"
     # A generic unary base edge (add extra data to an observation)
     # A single observation will probalby have 0 to 1 unary edge
     Unary = "unary"
@@ -295,15 +297,11 @@ class ObservationEdgeType(enum.Enum):
 def edge_table_name(type: ObservationEdgeType) -> str:
     return f"{type.value}_edge"
 
-# TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
-#       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
-#       a JSON blob would capture any data.
-class UnaryEdge(Base):
-    __tablename__ = edge_table_name(ObservationEdgeType.Unary)
+
+class Edge(Base):
+    __tablename__ = edge_table_name(ObservationEdgeType.Edge)
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
-    observation_id = Column(UUID(as_uuid=True),  ForeignKey(
-        "observation.id"), nullable=False)
     type = Column(Enum(ObservationEdgeType))
 
     uncertainty_model = Column(String,
@@ -312,15 +310,36 @@ class UnaryEdge(Base):
                          comment="Uncertainty parameters for model (e.g., covariance for gaussian, erros, ...).")
 
     __mapper_args__ = {
-        "polymorphic_identity": ObservationEdgeType.Unary,
+        "polymorphic_identity": ObservationEdgeType.Edge,
         "polymorphic_on": type,
     }
 
     __table_args__ = (
-        {"comment": "Adds unary or unary association information to observations." }
+        CheckConstraint(f"type != '{ObservationEdgeType.Edge.name}'", name="edge_is_abstract"),
     )
 
-class BetweenEdge(UnaryEdge):
+
+# TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
+#       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
+#       a JSON blob would capture any data.
+class UnaryEdge(Edge):
+    __tablename__ = edge_table_name(ObservationEdgeType.Unary)
+    id = Column(UUID(as_uuid=True), ForeignKey(edge_table_name(ObservationEdgeType.Edge)+".id"), primary_key=True)
+    observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id"), nullable=False)
+    type = Column(Enum(ObservationEdgeType))
+
+    position = Column(Geometry("POINTZ"),
+                      comment="Position off associated pose")
+    normal = Column(Geometry("POINTZ"),
+                           comment="Orientation (rotational component)")
+
+    __mapper_args__ = {
+        "polymorphic_identity": ObservationEdgeType.Unary,
+    }
+
+
+class BetweenEdge(Edge):
     """Implements a relative pose between two other pose observations.
 
     For direct measurement modalities this is similar to odometry (e.g., visual odometry).
@@ -332,13 +351,17 @@ class BetweenEdge(UnaryEdge):
     as the relative pose change
     """
     __tablename__ = edge_table_name(ObservationEdgeType.Between)
-    id = Column(UUID(as_uuid=True), ForeignKey("unary_edge.id"), primary_key=True)
-    second_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+    id = Column(UUID(as_uuid=True), ForeignKey(edge_table_name(ObservationEdgeType.Edge)+".id"), primary_key=True)
+    from_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id"), nullable=False)
+    to_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
         "observation.id"), nullable=False)
     rel_position = Column(Geometry("POINTZ"),
                       comment="Relative position change off associated pose")
     rel_normal = Column(Geometry("POINTZ"),
                            comment="Relative orientation change (rotational component)")
+    edge_info = Column(JSON, comment="Additional information, e.g., is loop edge")
+
     __mapper_args__ = {
         "polymorphic_identity": ObservationEdgeType.Between,
     }
