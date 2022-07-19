@@ -317,7 +317,7 @@ class UnaryEdge(Base):
     }
 
     __table_args__ = (
-        {"comment": "Adds unary or n-ary association information to observations." }
+        {"comment": "Adds unary or unary association information to observations." }
     )
 
 class BetweenEdge(UnaryEdge):
@@ -334,7 +334,7 @@ class BetweenEdge(UnaryEdge):
     __tablename__ = edge_table_name(ObservationEdgeType.Between)
     id = Column(UUID(as_uuid=True), ForeignKey("unary_edge.id"), primary_key=True)
     second_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
-        "observation.id"), primary_key=True)
+        "observation.id"), nullable=False)
     rel_position = Column(Geometry("POINTZ"),
                       comment="Relative position change off associated pose")
     rel_normal = Column(Geometry("POINTZ"),

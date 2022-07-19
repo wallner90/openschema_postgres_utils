@@ -23,7 +23,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     # print(loaded_data)
 
     engine = create_engine(
-        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=False)
+        'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', echo=True)
     if not engine.dialect.has_schema(engine, 'public'):
         engine.execute(CreateSchema('public'))
     Session = sessionmaker(bind=engine)
@@ -61,7 +61,7 @@ with open(msg_pack_file_path, "rb") as data_file:
             position=f"POINTZ({landmark_pos_w[0]} {landmark_pos_w[1]} {landmark_pos_w[2]})")
 
     poses = []
-    observations = []
+    observations = {}
     camera_keypoints = []
     # Add keypoints
     # go over all keyframes
@@ -85,18 +85,39 @@ with open(msg_pack_file_path, "rb") as data_file:
             pose=pose, sensor=camera, camera=camera, algorithm="openVSLAM",
             created_at = creation_time, 
             updated_at = creation_time)
-        observations.append(camera_observation)
+        observations[int(keyframe_id)] = camera_observation
 
         for keypt, lm_id, descriptor, depths, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights):
-            ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][0]})",
+            ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][1]})",
                                  descriptor=descriptor,
                                  camera_observation=camera_observation)
             if lm_id != -1 and int(lm_id) in landmarks.keys():
                 ckp.landmark = landmarks[int(lm_id)]
             camera_keypoints.append(ckp)
+    
 
+
+        
     session = Session()
     session.add_all([newmap, pg, sensor_rig, camera] +
                     list(landmarks.values()) +
-                    camera_keypoints + poses + observations)
+                    camera_keypoints + poses + list(observations.values()))
+    session.commit()
+
+    # TODO: adding CameraObservation as Observation is not possible direct -> need to add id manually -> need to commit first to get an ID
+    # Maybe there is a more elgant way to use the automatic deduction of dependencies with inheritence / upcast? E.g., observation_id = Observation(current_observation).
+    edges = []
+    # Add (covisibility and loop) edges
+    for keyframe_id in list(loaded_data["keyframes"].keys()):
+        keyframe_msgpack = loaded_data["keyframes"][keyframe_id]
+        current_observation = observations[int(keyframe_id)]
+        for child_keyframe_id in keyframe_msgpack['span_children']:
+            child_observation = observations[child_keyframe_id]
+            edges.append(BetweenEdge(observation_id = current_observation.id, second_observation_id = child_observation.id))
+
+        for loop_edge_id in keyframe_msgpack['loop_edges']:
+            child_observation = observations[loop_edge_id]
+            edges.append(BetweenEdge(observation_id = current_observation.id, second_observation_id = child_observation.id))
+
+    session.add_all(edges)
     session.commit()
