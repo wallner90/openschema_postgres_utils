@@ -23,6 +23,19 @@ engine = create_engine(
 
 Session = sessionmaker(bind=engine)
 session = Session()
+
+
+# Version with queries
+all_sensors = session.query(Sensor).join(SensorRig).join(PoseGraph).join(Map).filter(Map.name == 'knapp_2022_03_03_dobl_test_env.msg2022-07-19 14:34:00.621283').all()
+all_observations = session.query(Observation).join(Pose).join(PoseGraph).join(Map).filter(Map.name == 'knapp_2022_03_03_dobl_test_env.msg2022-07-19 14:34:00.621283').all()
+all_landmarks = session.query(Landmark).join(CameraKeypoint).join(Observation, CameraKeypoint.camera_observation_id == Observation.id).join(Pose).join(PoseGraph).join(Map).filter(Map.name == 'knapp_2022_03_03_dobl_test_env.msg2022-07-19 14:34:00.621283').all()
+for observation in all_observations:
+    pose = observation.pose
+    keypoints = observation.keypoints
+    
+
+
+# Version with loops
 maps = session.query(Map)
 
 for map in maps:
