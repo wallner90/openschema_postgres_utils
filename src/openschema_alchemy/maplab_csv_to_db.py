@@ -1,27 +1,17 @@
 from sqlalchemy import create_engine
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
 from sqlalchemy.schema import CreateSchema
-
-from geoalchemy2 import Geometry, func
-
 from sqlalchemy.orm import sessionmaker
 
 from openschema_alchemy.model import *
 from datetime import datetime
-from pathlib import Path
 
 from openschema_alchemy.vi_map import VImap
-
 from pyquaternion import Quaternion
-
-import pandas as pd
-import numpy as np
 
 
 # load vi-map
-vimap = VImap('/home/ernst/Desktop/dobl_halle_tagged/aaadfd42874eeb161400000000000000')
+vimap = VImap('/data/iviso/_OpenSCHEMA/Knapp_Dobl/dobl_halle_tagged/aaadfd42874eeb161400000000000000')
 
 
 # TODO: Before use pgterm later maybe with sqlalchemy utils
@@ -133,8 +123,10 @@ for i in range(num_vertices):
                                  landmark=landmarks[lms_ind])
             camera_keypoints.append(ckp)
 
+    session = Session()
+    session.add_all([newmap, pg, sensor_rig, cameras] +
+                    list(landmarks.values()) +
+                    camera_keypoints + poses + list(observations.values()))
+    session.commit()
 
-
-    # align observations / landmarks to image keypoints
-    #keypoint_vertex_inds, = np.where(np.all(np.vstack((vimap.observations.keypoint_index.isin(tracks.keypoint_index).to_numpy(),
-    #                           vimap.observations.vertex_index.isin(tracks.vertex_index).to_numpy())), axis=0))
+    # TODO: add loop closures, co-visibilities of observations as edges in db - currently not exported to csv!
