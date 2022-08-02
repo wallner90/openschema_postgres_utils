@@ -70,7 +70,10 @@ with open(msg_pack_file_path, "rb") as data_file:
         lm_ids_msgpack = keyframe_msgpack["lm_ids"]
         descriptors_msgpack = keyframe_msgpack["descs"]
         depths_msgpack = keyframe_msgpack["depths"]
-        x_rights = keyframe_msgpack["x_rights"]
+        depth_thr_msgpack = keyframe_msgpack["depth_thr"]
+        n_scale_levels_msgpack = keyframe_msgpack["n_scale_levels"]
+        scale_factor_msgpack = keyframe_msgpack["scale_factor"]
+        x_rights_msgpack = keyframe_msgpack["x_rights"]
 
         trans_cw = keyframe_msgpack["trans_cw"]
         # TODO: Calculate unit vector from quaternion and add to pose
@@ -79,24 +82,33 @@ with open(msg_pack_file_path, "rb") as data_file:
             posegraph=pg)
         poses.append(pose)
 
-        creation_time = datetime.fromtimestamp(float(keyframe_msgpack["ts"])/1000.0)
+        creation_time = datetime.fromtimestamp(
+            float(keyframe_msgpack["ts"])/1000.0)
         camera_observation = CameraObservation(
             pose=pose, sensor=camera, camera=camera, algorithm="openVSLAM",
-            created_at = creation_time, 
-            updated_at = creation_time)
+            created_at=creation_time,
+            updated_at=creation_time,
+            algorithm_settings={'openVSLAM':
+                                {'depth_thr': depth_thr_msgpack,
+                                 'n_scale_levels': n_scale_levels_msgpack,
+                                 'scale_factor': scale_factor_msgpack}
+                                })
         observations[int(keyframe_id)] = camera_observation
 
-        for keypt, lm_id, descriptor, depths, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights):
+        for keypt, lm_id, descriptor, depth, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights_msgpack):
             ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][1]})",
-                                 descriptor=descriptor,
+                                 descriptor={'openVSLAM':
+                                             {'ORB': descriptor,
+                                                 'depth': depth,
+                                                 'x_right': x_right,
+                                                 'ang': keypt['ang'],
+                                                 'oct': keypt['oct']}
+                                             },
                                  camera_observation=camera_observation)
             if lm_id != -1 and int(lm_id) in landmarks.keys():
                 ckp.landmark = landmarks[int(lm_id)]
             camera_keypoints.append(ckp)
-    
 
-
-        
     session = Session()
     session.add_all([newmap, pg, sensor_rig, camera] +
                     list(landmarks.values()) +
@@ -112,11 +124,13 @@ with open(msg_pack_file_path, "rb") as data_file:
         current_observation = observations[int(keyframe_id)]
         for child_keyframe_id in keyframe_msgpack['span_children']:
             child_observation = observations[child_keyframe_id]
-            edges.append(BetweenEdge(from_observation_id = current_observation.id, to_observation_id = child_observation.id))
+            edges.append(BetweenEdge(
+                from_observation_id=current_observation.id, to_observation_id=child_observation.id))
 
         for loop_edge_id in keyframe_msgpack['loop_edges']:
             child_observation = observations[loop_edge_id]
-            edges.append(BetweenEdge(from_observation_id = current_observation.id, to_observation_id = child_observation.id, edge_info = {"is_edge": True}))
+            edges.append(BetweenEdge(from_observation_id=current_observation.id,
+                         to_observation_id=child_observation.id, edge_info={"is_edge": True}))
 
     session.add_all(edges)
     session.commit()
