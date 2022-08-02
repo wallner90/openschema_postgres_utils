@@ -30,7 +30,7 @@ loaded_data_msg_pack_cmp = msgpack.unpackb(
 engine = create_engine(
     'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', poolclass=QueuePool, echo=False, pool_size=200)
 
-map_name = 'knapp_2022_03_03_dobl_test_env.msg2022-08-02 12:10:43.036200'
+map_name = 'knapp_2022_03_03_dobl_test_env.msg2022-08-02 12:56:14.817110'
 
 
 Session = sessionmaker(bind=engine)
@@ -61,24 +61,60 @@ with open(msg_pack_file_path, "wb") as output_file:
     keyframes = {}
     for observation in all_observations:
         kf_idx = str(all_observations.index(observation))
+        depths = []
+        x_rights = []
+        keypoints = []
+        descs = []
+        lm_ids = []
+        for keypoint in observation.camera_keypoints:
+            depths.append(keypoint.descriptor['openVSLAM']['depth'])
+            x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
+            keypoints.append({'ang': keypoint.descriptor['openVSLAM']['ang'],
+                              'oct': keypoint.descriptor['openVSLAM']['oct'],
+                              'pt': [session.execute(func.ST_X(keypoint.point)).scalar(),
+                                     session.execute(func.ST_Y(keypoint.point)).scalar()]})
+            descs.append(keypoint.descriptor['openVSLAM']['ORB'])
+            lm_ids.append(all_landmarks.index(keypoint.landmark)
+                          if keypoint.landmark in all_landmarks else -1)
+
+        span_children = [all_observations.index(x) if x in all_observations else None
+                         for x in session.query(Observation)
+                                         .join(BetweenEdge, Observation.id == BetweenEdge.to_observation_id)
+                                         .filter(BetweenEdge.edge_info == None)
+                                         .filter(BetweenEdge.from_observation_id == observation.id).all()]
+
+        span_parent = [all_observations.index(x) if x in all_observations else None
+                       for x in session.query(Observation)
+                                       .join(BetweenEdge, Observation.id == BetweenEdge.from_observation_id)
+                                       .filter(BetweenEdge.edge_info == None)
+                                       .filter(BetweenEdge.to_observation_id == observation.id).all()]
+
+        loop_edges = [all_observations.index(x) if x in all_observations else None
+                      for x in session.query(Observation)
+                                      .join(BetweenEdge, Observation.id == BetweenEdge.to_observation_id)
+                                      .filter(text("(edge_info->>'is_edge')::boolean = true"))
+                                      .filter(BetweenEdge.from_observation_id == observation.id).all()]
+
         keyframes[kf_idx] = {'cam': observation.sensor.name,
-                             'depth_thr': -1,  # TODO: ADD THIS in algorithm_settings!!!
-                             'depths': [],
-                             'descs': [],
-                             'keypts': [],
-                             'lm_ids': [],
-                             'loop_edges': [],
+                             'depth_thr': observation.algorithm_settings['openVSLAM']['depth_thr'],
+                             'depths': depths,
+                             'descs': descs,
+                             'keypts': keypoints,
+                             'lm_ids': lm_ids,
+                             'loop_edges': loop_edges,
                              'n_keypts': len(observation.keypoints),
-                             'n_scale_levels': -1,  # TODO: ADD THIS in algorithm_settings!!!
+                             'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
                              'rot_cw': [],
-                             'scale_factor': -1,  # TODO: ADD THIS in algorithm_settings!!!
-                             'span_children': [],
-                             'span_parent': -1,
-                             'src_frm_id': -1,
-                             'trans_cw': [],
-                             'ts': -1,
+                             'scale_factor': observation.algorithm_settings['openVSLAM']['scale_factor'],
+                             'span_children': span_children,
+                             'span_parent': -1 if len(span_parent) == 0 else span_parent[0],
+                             'src_frm_id': 0,
+                             'trans_cw': [session.execute(func.ST_X(observation.pose.position)).scalar(),
+                                          session.execute(func.ST_Y(observation.pose.position)).scalar(),
+                                          session.execute(func.ST_Z(observation.pose.position)).scalar()],
+                             'ts': (observation.updated_at-datetime(1970,1,1)).total_seconds(),
                              'undist': [],
-                             'x_rights': []
+                             'x_rights': x_rights
                              }
     data['keyframes'] = keyframes
 

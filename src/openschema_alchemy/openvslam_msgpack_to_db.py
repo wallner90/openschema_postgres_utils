@@ -130,7 +130,7 @@ with open(msg_pack_file_path, "rb") as data_file:
         for loop_edge_id in keyframe_msgpack['loop_edges']:
             child_observation = observations[loop_edge_id]
             edges.append(BetweenEdge(from_observation_id=current_observation.id,
-                         to_observation_id=child_observation.id, edge_info={"is_edge": True}))
+                         to_observation_id=child_observation.id, edge_info={"is_loop_edge": True}))
 
     session.add_all(edges)
     session.commit()
