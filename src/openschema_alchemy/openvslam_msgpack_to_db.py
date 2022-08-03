@@ -14,6 +14,15 @@ from openschema_alchemy.model import *
 from datetime import datetime
 from pathlib import Path
 
+from math import atan2, asin
+
+def quaternion_to_euler(qw, qx, qy, qz):
+    roll = atan2(2*(qw*qx + qy*qz), 1-2*(qx*qx + qy*qy))
+    pitch = asin(2*(qw*qy - qz*qx))
+    yaw = atan2(2*(qw*qz + qx*qy), 1-2*(qy*qy + qz*qz))
+    return [roll, pitch, yaw]
+
+
 msg_pack_file_path = Path(
     "/workspaces/openschema_postgres_utils/data/knapp_2022_03_03_dobl_test_env.msg")
 
@@ -74,11 +83,14 @@ with open(msg_pack_file_path, "rb") as data_file:
         n_scale_levels_msgpack = keyframe_msgpack["n_scale_levels"]
         scale_factor_msgpack = keyframe_msgpack["scale_factor"]
         x_rights_msgpack = keyframe_msgpack["x_rights"]
+        undists_msgpack = keyframe_msgpack["undists"]
 
         trans_cw = keyframe_msgpack["trans_cw"]
         # TODO: Calculate unit vector from quaternion and add to pose
+        euler = quaternion_to_euler(*keyframe_msgpack["rot_cw"])
         pose = Pose(
             position=f"POINTZ({trans_cw[0]} {trans_cw[1]} {trans_cw[2]})",
+            normal=f"POINTZ({euler[0]} {euler[1]} {euler[2]})", # TODO: normal vector or euler?
             posegraph=pg)
         poses.append(pose)
 
@@ -95,14 +107,15 @@ with open(msg_pack_file_path, "rb") as data_file:
                                 })
         observations[int(keyframe_id)] = camera_observation
 
-        for keypt, lm_id, descriptor, depth, x_right in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights_msgpack):
+        for keypt, lm_id, descriptor, depth, x_right, undist in zip(keypts_msgpack, lm_ids_msgpack, descriptors_msgpack, depths_msgpack, x_rights_msgpack, undists_msgpack):
             ckp = CameraKeypoint(point=f"POINT({keypt['pt'][0]} {keypt['pt'][1]})",
                                  descriptor={'openVSLAM':
                                              {'ORB': descriptor,
                                                  'depth': depth,
                                                  'x_right': x_right,
                                                  'ang': keypt['ang'],
-                                                 'oct': keypt['oct']}
+                                                 'oct': keypt['oct'],
+                                                 'undist': undist}
                                              },
                                  camera_observation=camera_observation)
             if lm_id != -1 and int(lm_id) in landmarks.keys():

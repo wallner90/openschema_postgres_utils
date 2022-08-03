@@ -16,6 +16,24 @@ from openschema_alchemy.model import *
 from datetime import datetime
 from pathlib import Path
 
+from math import sin, cos
+
+
+def euler_to_quaternion(roll, pitch, yaw):
+    cy = cos(yaw * 0.5)
+    sy = sin(yaw * 0.5)
+    cp = cos(pitch * 0.5)
+    sp = sin(pitch * 0.5)
+    cr = cos(roll * 0.5)
+    sr = sin(roll * 0.5)
+
+    qw = cr * cp * cy + sr * sp * sy
+    qx = sr * cp * cy - cr * sp * sy
+    qy = cr * sp * cy + sr * cp * sy
+    qz = cr * cp * sy - sr * sp * cy
+    return [qw, qx, qy, qz]
+
+
 msg_pack_file_path = Path(
     "/workspaces/openschema_postgres_utils/data/repacked.msg")
 
@@ -30,7 +48,7 @@ loaded_data_msg_pack_cmp = msgpack.unpackb(
 engine = create_engine(
     'postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait', poolclass=QueuePool, echo=False, pool_size=200)
 
-map_name = 'knapp_2022_03_03_dobl_test_env.msg2022-08-02 12:56:14.817110'
+map_name = 'knapp_2022_03_03_dobl_test_env.msg2022-08-03 10:15:05.602374'
 
 
 Session = sessionmaker(bind=engine)
@@ -66,6 +84,7 @@ with open(msg_pack_file_path, "wb") as output_file:
         keypoints = []
         descs = []
         lm_ids = []
+        undist = []
         for keypoint in observation.camera_keypoints:
             depths.append(keypoint.descriptor['openVSLAM']['depth'])
             x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
@@ -76,6 +95,7 @@ with open(msg_pack_file_path, "wb") as output_file:
             descs.append(keypoint.descriptor['openVSLAM']['ORB'])
             lm_ids.append(all_landmarks.index(keypoint.landmark)
                           if keypoint.landmark in all_landmarks else -1)
+            undist.append(keypoint.descriptor['openVSLAM']['undist'])
 
         span_children = [all_observations.index(x) if x in all_observations else None
                          for x in session.query(Observation)
@@ -92,7 +112,7 @@ with open(msg_pack_file_path, "wb") as output_file:
         loop_edges = [all_observations.index(x) if x in all_observations else None
                       for x in session.query(Observation)
                                       .join(BetweenEdge, Observation.id == BetweenEdge.to_observation_id)
-                                      .filter(text("(edge_info->>'is_edge')::boolean = true"))
+                                      .filter(text("(edge_info->>'is_loop_edge')::boolean = true"))
                                       .filter(BetweenEdge.from_observation_id == observation.id).all()]
 
         keyframes[kf_idx] = {'cam': observation.sensor.name,
@@ -104,16 +124,22 @@ with open(msg_pack_file_path, "wb") as output_file:
                              'loop_edges': loop_edges,
                              'n_keypts': len(observation.keypoints),
                              'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
-                             'rot_cw': [],
+                             'rot_cw': euler_to_quaternion(
+                                 roll=session.execute(
+                                     func.ST_X(observation.pose.normal)).scalar(),
+                                 pitch=session.execute(
+                                     func.ST_Y(observation.pose.normal)).scalar(),
+                                 yaw=session.execute(func.ST_Z(observation.pose.normal)).scalar()),
                              'scale_factor': observation.algorithm_settings['openVSLAM']['scale_factor'],
                              'span_children': span_children,
                              'span_parent': -1 if len(span_parent) == 0 else span_parent[0],
                              'src_frm_id': 0,
                              'trans_cw': [session.execute(func.ST_X(observation.pose.position)).scalar(),
-                                          session.execute(func.ST_Y(observation.pose.position)).scalar(),
+                                          session.execute(
+                                              func.ST_Y(observation.pose.position)).scalar(),
                                           session.execute(func.ST_Z(observation.pose.position)).scalar()],
-                             'ts': (observation.updated_at-datetime(1970,1,1)).total_seconds(),
-                             'undist': [],
+                             'ts': (observation.updated_at-datetime(1970, 1, 1)).total_seconds(),
+                             'undist': undist,
                              'x_rights': x_rights
                              }
     data['keyframes'] = keyframes
