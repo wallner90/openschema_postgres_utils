@@ -16,6 +16,9 @@ from pathlib import Path
 
 from math import atan2, asin
 
+from tqdm import tqdm
+
+
 def quaternion_to_euler(qw, qx, qy, qz):
     roll = atan2(2*(qw*qx + qy*qz), 1-2*(qx*qx + qy*qy))
     pitch = asin(2*(qw*qy - qz*qx))
@@ -61,7 +64,7 @@ with open(msg_pack_file_path, "rb") as data_file:
 
     landmarks = {}
     # Add landmarks
-    for landmark_id in list(loaded_data["landmarks"].keys()):
+    for landmark_id in tqdm(list(loaded_data["landmarks"].keys()), desc="Landmarks"):
         landmark_msgpack = loaded_data["landmarks"][landmark_id]
         landmark_pos_w = landmark_msgpack["pos_w"]
 
@@ -73,7 +76,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     camera_keypoints = []
     # Add keypoints
     # go over all keyframes
-    for keyframe_id in list(loaded_data["keyframes"].keys()):
+    for keyframe_id in tqdm(list(loaded_data["keyframes"].keys()), desc="Observations"):
         keyframe_msgpack = loaded_data["keyframes"][keyframe_id]
         keypts_msgpack = keyframe_msgpack["keypts"]
         lm_ids_msgpack = keyframe_msgpack["lm_ids"]
@@ -132,7 +135,7 @@ with open(msg_pack_file_path, "rb") as data_file:
     # Maybe there is a more elgant way to use the automatic deduction of dependencies with inheritence / upcast? E.g., observation_id = Observation(current_observation).
     edges = []
     # Add (covisibility and loop) edges
-    for keyframe_id in list(loaded_data["keyframes"].keys()):
+    for keyframe_id in tqdm(list(loaded_data["keyframes"].keys()), desc="Edges"):
         keyframe_msgpack = loaded_data["keyframes"][keyframe_id]
         current_observation = observations[int(keyframe_id)]
         for child_keyframe_id in keyframe_msgpack['span_children']:

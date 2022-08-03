@@ -18,6 +18,8 @@ from pathlib import Path
 
 from math import sin, cos
 
+from tqdm import tqdm
+
 
 def euler_to_quaternion(roll, pitch, yaw):
     cy = cos(yaw * 0.5)
@@ -55,16 +57,12 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-# Version with queries
 all_sensors = session.query(Sensor).join(SensorRig).join(
     PoseGraph).join(Map).filter(Map.name == map_name).all()
 all_observations = session.query(Observation).join(Pose).join(
     PoseGraph).join(Map).filter(Map.name == map_name).all()
 all_landmarks = session.query(Landmark).join(CameraKeypoint).join(Observation, CameraKeypoint.camera_observation_id ==
                                                                   Observation.id).join(Pose).join(PoseGraph).join(Map).filter(Map.name == map_name).all()
-for observation in all_observations:
-    pose = observation.pose
-    keypoints = observation.keypoints
 
 with open(msg_pack_file_path, "wb") as output_file:
     data = {}
@@ -76,8 +74,22 @@ with open(msg_pack_file_path, "wb") as output_file:
     data['frame_next_id'] = data['keyframe_next_id'] = len(all_observations)
     data['landmark_next_id'] = len(all_landmarks)
 
+    landmarks = {}
+    for landmark in tqdm(all_landmarks, desc="Landmarks"):
+        lm_idx = str(all_landmarks.index(landmark))
+        landmarks[lm_idx] = {'1st_keyfrm': all_observations.index(landmark.camera_keypoints[0].camera_observation) if len(
+            landmark.camera_keypoints) > 0 else -1,
+            'n_fnd': len(landmark.camera_keypoints),
+            'n_vis': len(landmark.camera_keypoints),
+            'pos_w': [session.execute(func.ST_X(landmark.position)).scalar(),
+                      session.execute(
+                func.ST_Y(landmark.position)).scalar(),
+            session.execute(func.ST_Z(landmark.position)).scalar()]
+        }
+    data['landmarks'] = landmarks
+
     keyframes = {}
-    for observation in all_observations:
+    for observation in tqdm(all_observations, desc="Observations"):
         kf_idx = str(all_observations.index(observation))
         depths = []
         x_rights = []
@@ -144,36 +156,6 @@ with open(msg_pack_file_path, "wb") as output_file:
                              }
     data['keyframes'] = keyframes
 
-    landmarks = {}
-    data['landmarks'] = landmarks
-
     output_data = msgpack.packb(data)
     output_file.write(output_data)
 
-
-# Version with loops
-maps = session.query(Map)
-
-for map in maps:
-    print(f"{map.id}: {map.name}")
-    for posegraph in map.posegraphs:
-        print(f"  Posegraph: {posegraph.id}")
-        # posegraph has exact one sensor_rig
-        sensor_rig = posegraph.sensor_rig[0]
-        sensors = sensor_rig.sensors
-        for sensor in sensors:
-            print(f"    sensors: {sensor.id} named {sensor.name}")
-        for pose in posegraph.poses:
-            print(
-                f"    pose: {pose.id} ; position: {session.execute(func.ST_AsText(pose.position)).scalar()}")
-            for observation in pose.observations:
-                camera_observation = session.query(CameraObservation).filter(
-                    CameraObservation.id == observation.id).first()
-                print(f"      camera_observation: {camera_observation.id}")
-                for keypoint in camera_observation.keypoints:
-                    print(
-                        f"        keypoint: {keypoint.id} ; descriptor: {keypoint.descriptor} : point: {session.execute(func.ST_AsText(keypoint.point)).scalar()}")
-                    landmark = keypoint.landmark
-                    if landmark is not None:
-                        print(
-                            f"          landmark: {landmark.id} ; point: {session.execute(func.ST_AsText(landmark.position)).scalar()}")
