@@ -27,6 +27,18 @@
             }
         },
         {
+            "name": "Profile: openVSLAM db to msgpack",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": [
+                "-o", "/tmp/tmp.prof", "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
             "name": "Python: Example",
             "type": "python",
             "request": "launch",

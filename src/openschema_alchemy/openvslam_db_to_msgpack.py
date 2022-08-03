@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.orm import with_polymorphic
+from sqlalchemy import select
 
 from geoalchemy2 import Geometry, func
 
@@ -19,6 +20,10 @@ from pathlib import Path
 from math import sin, cos
 
 from tqdm import tqdm
+
+
+def find_index(list, condition):
+    return [i for i, elem in enumerate(list) if condition(elem)]
 
 
 def euler_to_quaternion(roll, pitch, yaw):
@@ -59,10 +64,21 @@ session = Session()
 
 all_sensors = session.query(Sensor).join(SensorRig).join(
     PoseGraph).join(Map).filter(Map.name == map_name).all()
+
 all_observations = session.query(Observation).join(Pose).join(
     PoseGraph).join(Map).filter(Map.name == map_name).all()
+# UUID -> IDX mapping
+observation_uuid_idx_map = {}
+for idx, observation in enumerate(all_observations):
+    observation_uuid_idx_map[observation.id] = idx
+
 all_landmarks = session.query(Landmark).join(CameraKeypoint).join(Observation, CameraKeypoint.camera_observation_id ==
                                                                   Observation.id).join(Pose).join(PoseGraph).join(Map).filter(Map.name == map_name).all()
+# UUID -> IDX mapping
+landmark_uuid_idx_map = {}
+for idx, landmark in enumerate(all_landmarks):
+    landmark_uuid_idx_map[landmark.id] = idx
+
 
 with open(msg_pack_file_path, "wb") as output_file:
     data = {}
@@ -74,23 +90,55 @@ with open(msg_pack_file_path, "wb") as output_file:
     data['frame_next_id'] = data['keyframe_next_id'] = len(all_observations)
     data['landmark_next_id'] = len(all_landmarks)
 
+    optimized_landmark_query = "SELECT DISTINCT ON (landmarks_with_count.id) " \
+        "landmarks_with_count.id AS lm_id, " \
+        "landmarks_with_count.n_vis AS n_vis, " \
+        "camera_keypoint.id AS ckp_id, " \
+        "camera_observation.id AS cobs_id, " \
+        "ST_X(landmarks_with_count.position) AS pos_x, " \
+        "ST_Y(landmarks_with_count.position) AS pos_y, " \
+        "ST_Z(landmarks_with_count.position) AS pos_z " \
+        "FROM ( " \
+        "    SELECT landmark.*, COUNT(*) AS n_vis " \
+        "        FROM landmark " \
+        "            JOIN camera_keypoint ON camera_keypoint.landmark_id = landmark.id " \
+        "        GROUP BY landmark.id " \
+        ") AS landmarks_with_count  " \
+        "    JOIN camera_keypoint ON camera_keypoint.landmark_id = landmarks_with_count.id " \
+        "    JOIN camera_observation ON camera_observation.id = camera_keypoint.camera_observation_id" \
+        "    JOIN observation ON observation.id = camera_observation.id " \
+        "    JOIN pose ON pose.id = observation.pose_id " \
+        "    JOIN posegraph ON posegraph.id = pose.posegraph_id " \
+        "    JOIN map ON map.id = posegraph.map_id " \
+        f"   WHERE map.name = '{map_name}' "
+
     landmarks = {}
-    for landmark in tqdm(all_landmarks, desc="Landmarks"):
-        lm_idx = str(all_landmarks.index(landmark))
-        landmarks[lm_idx] = {'1st_keyfrm': all_observations.index(landmark.camera_keypoints[0].camera_observation) if len(
-            landmark.camera_keypoints) > 0 else -1,
-            'n_fnd': len(landmark.camera_keypoints),
-            'n_vis': len(landmark.camera_keypoints),
-            'pos_w': [session.execute(func.ST_X(landmark.position)).scalar(),
-                      session.execute(
-                func.ST_Y(landmark.position)).scalar(),
-            session.execute(func.ST_Z(landmark.position)).scalar()]
-        }
-    data['landmarks'] = landmarks
+    for special_landmark_query in tqdm(session.execute(optimized_landmark_query).all()):
+        lm_idx = landmark_uuid_idx_map[special_landmark_query.lm_id]
+        landmarks[lm_idx] = {'1st_keyfrm': special_landmark_query.cobs_id,
+                             'n_fnd': special_landmark_query.n_vis,
+                             'n_vis': special_landmark_query.n_vis,
+                             'pos_w': [special_landmark_query.pos_x, special_landmark_query.pos_y, special_landmark_query.pos_z]
+                             }
+
+    # -> Deprecated: TOO SLOW!! Use special query -> TODO: rewrite with ORM functionality instead of plain SQL!
+    # for landmark in tqdm(all_landmarks, desc="Landmarks"):
+    #     lm_idx = str(all_landmarks.index(landmark))
+    #     landmarks[lm_idx] = {'1st_keyfrm': all_observations.index(landmark.camera_keypoints[0].camera_observation) if len(
+    #         landmark.camera_keypoints) > 0 else -1,
+    #         'n_fnd': len(landmark.camera_keypoints),
+    #         'n_vis': len(landmark.camera_keypoints),
+    #         'pos_w': [session.execute(func.ST_X(landmark.position)).scalar(),
+    #                   session.execute(
+    #             func.ST_Y(landmark.position)).scalar(),
+    #         session.execute(func.ST_Z(landmark.position)).scalar()]
+    #     }
+    # data['landmarks'] = landmarks
 
     keyframes = {}
     for observation in tqdm(all_observations, desc="Observations"):
-        kf_idx = str(all_observations.index(observation))
+        # kf_idx = str(all_observations.index(observation))
+        kf_idx = observation_uuid_idx_map[observation.id]
         depths = []
         x_rights = []
         keypoints = []
@@ -158,4 +206,3 @@ with open(msg_pack_file_path, "wb") as output_file:
 
     output_data = msgpack.packb(data)
     output_file.write(output_data)
-
