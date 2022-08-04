@@ -10,7 +10,7 @@ from sqlalchemy.sql.ddl import CreateSchema
 from model import *
 
 json_file_path = Path(
-    "/home/manar/Downloads/map525.json")
+    "lane_map.json")
 pi = 22/7
 with open(json_file_path, "rb") as data_file:
     loaded_data = json.load(data_file)
