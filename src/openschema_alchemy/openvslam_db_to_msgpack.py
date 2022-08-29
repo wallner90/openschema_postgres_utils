@@ -145,7 +145,7 @@ with open(msg_pack_file_path, "wb") as output_file:
         descs = []
         lm_ids = []
         undist = []
-        for keypoint in observation.camera_keypoints:
+        for keypoint in observation.camera_keypoint:
             depths.append(keypoint.descriptor['openVSLAM']['depth'])
             x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
             keypoints.append({'ang': keypoint.descriptor['openVSLAM']['ang'],
@@ -182,7 +182,7 @@ with open(msg_pack_file_path, "wb") as output_file:
                              'keypts': keypoints,
                              'lm_ids': lm_ids,
                              'loop_edges': loop_edges,
-                             'n_keypts': len(observation.keypoints),
+                             'n_keypts': len(observation.camera_keypoint),
                              'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
                              'rot_cw': euler_to_quaternion(
                                  roll=session.execute(

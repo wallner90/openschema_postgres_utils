@@ -231,7 +231,6 @@ class CameraObservation(Observation):
     camera_sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
 
     camera = relationship("Camera", backref="camera_observations")
-    keypoints = relationship('CameraKeypoint', backref='camera_observations')
 
     __mapper_args__ = {
         "polymorphic_identity": ObservationType.Camera,
@@ -393,10 +392,8 @@ class CameraKeypoint(Base):
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
     landmark = relationship('Landmark', backref='camera_keypoints')
-    # camera_observation = relationship('CameraObservation', backref='camera_keypoints')
-    # TODO: had to remove this relationship because otherwise:
-    # load_dobl.py:41: SAWarning: relationship 'CameraObservation.camera_keypoints' will copy column camera_observation.id to column camera_keypoint.camera_observation_id, which conflicts with relationship(s): 'CameraKeypoint.camera_observations' (copies camera_observation.id to camera_keypoint.camera_observation_id), 'CameraObservation.keypoints' (copies camera_observation.id to camera_keypoint.camera_observation_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="camera_observations,keypoints"' to the 'CameraObservation.camera_keypoints' relationship. (Background on this error at: https://sqlalche.me/e/14/qzyx)
-    # load_dobl.py:41: SAWarning: relationship 'CameraKeypoint.camera_observation' will copy column camera_observation.id to column camera_keypoint.camera_observation_id, which conflicts with relationship(s): 'CameraKeypoint.camera_observations' (copies camera_observation.id to camera_keypoint.camera_observation_id), 'CameraObservation.keypoints' (copies camera_observation.id to camera_keypoint.camera_observation_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="camera_observations,keypoints"' to the 'CameraKeypoint.camera_observation' relationship. (Background on this error at: https://sqlalche.me/e/14/qzyx)
+    
+    camera_observation = relationship('CameraObservation', backref='camera_keypoint')
 
 
 class LIDARKeypoint(Base):
