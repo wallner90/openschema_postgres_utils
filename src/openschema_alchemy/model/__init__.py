@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, Integer, PrimaryKeyConstraint, Table, ForeignKeyConstraint, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
+from sqlalchemy import Boolean, Enum, Integer, PrimaryKeyConstraint, Table, ForeignKeyConstraint, CheckConstraint, Column, ForeignKey, String, UniqueConstraint, text, ARRAY, JSON
 from sqlalchemy.orm import declarative_base, relationship, reconstructor
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
@@ -40,7 +40,7 @@ class SensorType(enum.Enum):
     RADAR = "radar"
     GNSS = "gnss"
     Pose = "generic_pose"
-    Odom = "odom"
+    ODOM = "generic_odom"
 
 class Sensor(Base):
     __tablename__ = SensorType.Sensor.value
@@ -144,14 +144,14 @@ class PoseGraph(Base):
     poses = relationship("Pose", backref="posegraph")
     sensor_rig = relationship("SensorRig", backref="posegraph")
 
-
+# TODO: we can add more info if relevant like acceleration and velocities (lin,ang)
 class Pose(Base):
     __tablename__ = "pose"
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"),
-                      comment="Absolute (map) position of a pose (with orientation as normal_vector).")
-    normal_vector = Column(Geometry("POINTZ"),
+                      comment="Absolute (map) position of a pose (with orientation as unit normal vector).")
+    normal = Column(Geometry("POINTZ"),
                            comment="Absolute orientation as normal vector in the map frame (at position).")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
@@ -164,7 +164,6 @@ class Pose(Base):
     parent = relationship("Pose", backref="children", remote_side=[id])
     observations = relationship("Observation", backref="pose")
 
-
 class ObservationType(enum.Enum):
     Observation = "observation"
     Camera = SensorType.Camera.value
@@ -173,6 +172,8 @@ class ObservationType(enum.Enum):
     RADAR = SensorType.RADAR.value
     GNSS = SensorType.GNSS.value
     Pose = SensorType.Pose.value
+    # can be from an odometer or measured virtual from VO.
+    ODOM = SensorType.ODOM.value
     Semantic = "semantic"
 
 def observation_to_sensor_type(type: ObservationType) -> str:
@@ -210,6 +211,7 @@ class Observation(Base):
     }
 
     __table_args__ = (
+        # {"comment": "Represents a (preintegrated) measurement or unary factor." },
         UniqueConstraint("id", "sensor_id", name="observation_sensor_is_unique"),
         CheckConstraint("updated_at >= created_at ", name="map_must_be_created_before_updated"),
         CheckConstraint(f"type != '{ObservationType.Observation.name}'", name="observation_is_abstract"),
@@ -221,6 +223,9 @@ class CameraObservation(Observation):
         "observation.id") ,primary_key=True)
     camera_sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
     camera = relationship("Camera", backref="camera_observations")
+
+    keypoints = relationship('CameraKeypoint', backref='camera_observations')
+
     __mapper_args__ = {
         "polymorphic_identity": ObservationType.Camera,
         "inherit_condition": Observation.id == id
@@ -229,7 +234,6 @@ class CameraObservation(Observation):
     __table_args__ = (
         ForeignKeyConstraint([id, camera_sensor_id], [Observation.id, Observation.sensor_id]),
     )
-
 
 class LIDARObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.LIDAR)
@@ -255,7 +259,6 @@ class LIDARObservation(Observation):
     __table_args__ = (
         ForeignKeyConstraint([id, lidar_sensor_id], [Observation.id, Observation.sensor_id]),
     )
-
 
 class SemanticObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.Semantic)
@@ -283,6 +286,87 @@ class IMUObservation(Observation):
     __table_args__ = (
         ForeignKeyConstraint([id, imu_sensor_id], [Observation.id, Observation.sensor_id]),
     )
+
+class ObservationEdgeType(enum.Enum):
+    # Abstract base edge
+    Edge = "abstract"
+    # A generic unary base edge (add extra data to an observation)
+    # A single observation will probalby have 0 to 1 unary edge
+    Unary = "unary"
+    # A generic relative pose edge.
+    # An observation could be associated with 0 to n other obervations relatively
+    Between = "between"
+
+def edge_table_name(type: ObservationEdgeType) -> str:
+    return f"{type.value}_edge"
+
+
+class Edge(Base):
+    __tablename__ = edge_table_name(ObservationEdgeType.Edge)
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                server_default=text("uuid_generate_v4()"))
+    type = Column(Enum(ObservationEdgeType))
+
+    uncertainty_model = Column(String,
+                               comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
+    uncertainty = Column(JSON,  
+                         comment="Uncertainty parameters for model (e.g., covariance for gaussian, erros, ...).")
+
+    __mapper_args__ = {
+        "polymorphic_identity": ObservationEdgeType.Edge,
+        "polymorphic_on": type,
+    }
+
+    __table_args__ = (
+        CheckConstraint(f"type != '{ObservationEdgeType.Edge.name}'", name="edge_is_abstract"),
+    )
+
+
+# TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
+#       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
+#       a JSON blob would capture any data.
+class UnaryEdge(Edge):
+    __tablename__ = edge_table_name(ObservationEdgeType.Unary)
+    id = Column(UUID(as_uuid=True), ForeignKey(edge_table_name(ObservationEdgeType.Edge)+".id"), primary_key=True)
+    observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id"), nullable=False)
+
+    position = Column(Geometry("POINTZ"),
+                      comment="Position off associated pose")
+    normal = Column(Geometry("POINTZ"),
+                           comment="Orientation (rotational component)")
+
+    __mapper_args__ = {
+        "polymorphic_identity": ObservationEdgeType.Unary,
+    }
+
+
+class BetweenEdge(Edge):
+    """Implements a relative pose between two other pose observations.
+
+    For direct measurement modalities this is similar to odometry (e.g., visual odometry).
+    For cameras based on their two observation keypoints allowing to reconstruct smart factors which.
+    incorporate the reporojection error into graph instead of just the relative pose change based on a VO observation.
+
+    Note that relative positions, if used, are results of the optimization. Measurements reside
+    as an observation even for visually derived results (e.g., VO, semantics). They need not necessarily be the same
+    as the relative pose change
+    """
+    __tablename__ = edge_table_name(ObservationEdgeType.Between)
+    id = Column(UUID(as_uuid=True), ForeignKey(edge_table_name(ObservationEdgeType.Edge)+".id"), primary_key=True)
+    from_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id"), nullable=False)
+    to_observation_id = Column(UUID(as_uuid=True),  ForeignKey(
+        "observation.id"), nullable=False)
+    rel_position = Column(Geometry("POINTZ"),
+                      comment="Relative position change off associated pose")
+    rel_normal = Column(Geometry("POINTZ"),
+                           comment="Relative orientation change (rotational component)")
+    edge_info = Column(JSON, comment="Additional information, e.g., is loop edge")
+
+    __mapper_args__ = {
+        "polymorphic_identity": ObservationEdgeType.Between,
+    }
 
 class CameraKeypoint(Base):
     __tablename__ = "camera_keypoint"
@@ -341,7 +425,7 @@ class Landmark(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"))
-    normal_vector = Column(Geometry("POINTZ"),
+    normal = Column(Geometry("POINTZ"),
                            comment="Absolute orientation as normal vector in the map frame (at position); null if not used.")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
