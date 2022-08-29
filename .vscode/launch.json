@@ -5,6 +5,40 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: openVSLAM msgpack to db",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_msgpack_to_db.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Python: openVSLAM db to msgpack",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Profile: openVSLAM db to msgpack",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": [
+                "-o", "/tmp/tmp.prof", "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
             "name": "Python: Example",
             "type": "python",
             "request": "launch",
