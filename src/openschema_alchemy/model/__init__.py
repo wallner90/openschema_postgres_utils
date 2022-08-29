@@ -42,6 +42,7 @@ class SensorType(enum.Enum):
     Pose = "generic_pose"
     ODOM = "generic_odom"
 
+
 class Sensor(Base):
     __tablename__ = SensorType.Sensor.value
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -144,6 +145,7 @@ class PoseGraph(Base):
     poses = relationship("Pose", backref="posegraph")
     sensor_rig = relationship("SensorRig", backref="posegraph")
 
+
 # TODO: we can add more info if relevant like acceleration and velocities (lin,ang)
 class Pose(Base):
     __tablename__ = "pose"
@@ -164,6 +166,7 @@ class Pose(Base):
     parent = relationship("Pose", backref="children", remote_side=[id])
     observations = relationship("Observation", backref="pose")
 
+
 class ObservationType(enum.Enum):
     Observation = "observation"
     Camera = SensorType.Camera.value
@@ -176,14 +179,17 @@ class ObservationType(enum.Enum):
     ODOM = SensorType.ODOM.value
     Semantic = "semantic"
 
+
 def observation_to_sensor_type(type: ObservationType) -> str:
     if type == ObservationType.Semantic:
         return 'Sensor'
     else:
         return type.name
 
+
 def observation_table_name(type: ObservationType) -> str:
     return f"{type.value}_{ObservationType.Observation.value}"
+
 
 class Observation(Base):
     __tablename__ = ObservationType.Observation.value
@@ -217,13 +223,14 @@ class Observation(Base):
         CheckConstraint(f"type != '{ObservationType.Observation.name}'", name="observation_is_abstract"),
     )
 
+
 class CameraObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.Camera)
     id = Column(UUID(as_uuid=True),  ForeignKey(
-        "observation.id") ,primary_key=True)
+        "observation.id"), primary_key=True)
     camera_sensor_id = Column(UUID(as_uuid=True), ForeignKey("camera.id"), nullable=False)
-    camera = relationship("Camera", backref="camera_observations")
 
+    camera = relationship("Camera", backref="camera_observations")
     keypoints = relationship('CameraKeypoint', backref='camera_observations')
 
     __mapper_args__ = {
@@ -234,6 +241,7 @@ class CameraObservation(Observation):
     __table_args__ = (
         ForeignKeyConstraint([id, camera_sensor_id], [Observation.id, Observation.sensor_id]),
     )
+
 
 class LIDARObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.LIDAR)
@@ -260,6 +268,7 @@ class LIDARObservation(Observation):
         ForeignKeyConstraint([id, lidar_sensor_id], [Observation.id, Observation.sensor_id]),
     )
 
+
 class SemanticObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.Semantic)
     id = Column(UUID(as_uuid=True), ForeignKey(
@@ -268,6 +277,7 @@ class SemanticObservation(Observation):
     __mapper_args__ = {
         "polymorphic_identity":  ObservationType.Semantic
     }
+
 
 class IMUObservation(Observation):
     __tablename__ = observation_table_name(ObservationType.IMU)
@@ -287,6 +297,7 @@ class IMUObservation(Observation):
         ForeignKeyConstraint([id, imu_sensor_id], [Observation.id, Observation.sensor_id]),
     )
 
+
 class ObservationEdgeType(enum.Enum):
     # Abstract base edge
     Edge = "abstract"
@@ -296,6 +307,7 @@ class ObservationEdgeType(enum.Enum):
     # A generic relative pose edge.
     # An observation could be associated with 0 to n other obervations relatively
     Between = "between"
+
 
 def edge_table_name(type: ObservationEdgeType) -> str:
     return f"{type.value}_edge"
@@ -368,6 +380,7 @@ class BetweenEdge(Edge):
         "polymorphic_identity": ObservationEdgeType.Between,
     }
 
+
 class CameraKeypoint(Base):
     __tablename__ = "camera_keypoint"
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -380,7 +393,11 @@ class CameraKeypoint(Base):
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
     landmark = relationship('Landmark', backref='camera_keypoints')
-    camera_observation = relationship('CameraObservation', backref='camera_keypoints')
+    # camera_observation = relationship('CameraObservation', backref='camera_keypoints')
+    # TODO: had to remove this relationship because otherwise:
+    # load_dobl.py:41: SAWarning: relationship 'CameraObservation.camera_keypoints' will copy column camera_observation.id to column camera_keypoint.camera_observation_id, which conflicts with relationship(s): 'CameraKeypoint.camera_observations' (copies camera_observation.id to camera_keypoint.camera_observation_id), 'CameraObservation.keypoints' (copies camera_observation.id to camera_keypoint.camera_observation_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="camera_observations,keypoints"' to the 'CameraObservation.camera_keypoints' relationship. (Background on this error at: https://sqlalche.me/e/14/qzyx)
+    # load_dobl.py:41: SAWarning: relationship 'CameraKeypoint.camera_observation' will copy column camera_observation.id to column camera_keypoint.camera_observation_id, which conflicts with relationship(s): 'CameraKeypoint.camera_observations' (copies camera_observation.id to camera_keypoint.camera_observation_id), 'CameraObservation.keypoints' (copies camera_observation.id to camera_keypoint.camera_observation_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="camera_observations,keypoints"' to the 'CameraKeypoint.camera_observation' relationship. (Background on this error at: https://sqlalche.me/e/14/qzyx)
+
 
 class LIDARKeypoint(Base):
     __tablename__ = "lidar_keypoint"

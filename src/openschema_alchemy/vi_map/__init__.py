@@ -20,5 +20,5 @@ class VImap:
         self.imu, self.imu_units = format_columns(pd.read_csv('{}/imu.csv'.format(self.dir)))
         self.landmarks, self.landmark_units = format_columns(pd.read_csv('{}/landmarks.csv'.format(self.dir)))
         self.observations, self.observations_units = format_columns(pd.read_csv('{}/observations.csv'.format(self.dir)))
-        self.tracks, self.tracks_units = format_columns(pd.read_csv('{}/tracks.csv'.format(self.dir))[1:])
+        self.tracks, self.tracks_units = format_columns(pd.read_csv('{}/tracks.csv'.format(self.dir), skiprows=[1]))
         self.vertices, self.vertices_units = format_columns(pd.read_csv('{}/vertices.csv'.format(self.dir)))
