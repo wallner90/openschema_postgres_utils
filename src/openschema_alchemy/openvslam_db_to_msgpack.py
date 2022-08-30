@@ -90,6 +90,7 @@ with open(msg_pack_file_path, "wb") as output_file:
     data['frame_next_id'] = data['keyframe_next_id'] = len(all_observations)
     data['landmark_next_id'] = len(all_landmarks)
 
+    # TODO: Do this with SQLAlchemy to avoid string matching!
     optimized_landmark_query = "SELECT DISTINCT ON (landmarks_with_count.id) " \
         "landmarks_with_count.id AS lm_id, " \
         "landmarks_with_count.n_vis AS n_vis, " \
