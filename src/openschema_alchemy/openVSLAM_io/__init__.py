@@ -210,6 +210,25 @@ def to_file(session, output_file, map_name):
             descs = []
             lm_ids = []
             undist = []
+
+            ## Slower as default iterator below
+            # optimized_keypoint_query = "SELECT " \
+            #                    "   camera_observation_id AS kf_id, landmark_id AS lm_id, ST_X(point) AS pt_u, ST_Y(point) AS pt_v, descriptor->'openVSLAM'->'depth' AS depth, descriptor->'openVSLAM'->'x_right' AS x_right, descriptor->'openVSLAM'->'ang' AS ang, descriptor->'openVSLAM'->'oct' AS oct, descriptor->'openVSLAM'->'ORB' as ORB, descriptor->'openVSLAM'->'undist' AS undist " \
+            #                    " FROM camera_keypoint " \
+            #                    f" WHERE camera_observation_id = '{observation.id}';"
+
+            # for keypoint in session.execute(optimized_keypoint_query).all():
+            #     depths.append(keypoint.depth)
+            #     x_rights.append(keypoint.x_right)
+            #     keypoints.append({'ang': keypoint.ang,
+            #                     'oct': keypoint.oct,
+            #                     'pt': [keypoint.pt_u, keypoint.pt_v]})
+            #     descs.append(keypoint.orb)
+            #     lm_ids.append(landmark_uuid_idx_map[keypoint.lm_id]
+            #                 if keypoint.lm_id in all_landmarks else -1)
+            #     undist.append(keypoint.undist)
+
+            # TOO Slow -> using optimized keypoint query
             for keypoint in observation.camera_keypoint:
                 depths.append(keypoint.descriptor['openVSLAM']['depth'])
                 x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
@@ -218,7 +237,7 @@ def to_file(session, output_file, map_name):
                                 'pt': [session.execute(func.ST_X(keypoint.point)).scalar(),
                                         session.execute(func.ST_Y(keypoint.point)).scalar()]})
                 descs.append(keypoint.descriptor['openVSLAM']['ORB'])
-                lm_ids.append(all_landmarks.index(keypoint.landmark)
+                lm_ids.append(landmark_uuid_idx_map[keypoint.landmark.id]
                             if keypoint.landmark in all_landmarks else -1)
                 undist.append(keypoint.descriptor['openVSLAM']['undist'])
 
