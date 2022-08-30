@@ -1,4 +1,4 @@
-# Utils to interact with openSCHEMA PostgreSQL Database
+# openSCHEMA postgreSQL ORM and Interface Utils
 
 ## Structure
 ``` text
@@ -7,10 +7,10 @@
 .github/workflows/          <-- github specific workflow settings
 .vscode/                    <-- VSCode specific settings, launch settings
 src/
-├─ model/                   <-- openSCHEMA ORM model
-├─ openschema_utils/        <-- math and i/o utils
-├─ openVSLAM_io/            <-- openVSLAM specific i/o utils
-├─ openschema_loader.py     <-- tool to load data to and from the db
+  ├─ model/                 <-- openSCHEMA ORM model
+  ├─ openschema_utils/      <-- math and i/o utils
+  ├─ openVSLAM_io/          <-- openVSLAM specific i/o utils
+  ├─ openschema_loader.py   <-- tool to load data to and from the db
 .gitignore
 Dockerfile                  <-- Dockerfile used by VSCode with all deps
 LICENSE
