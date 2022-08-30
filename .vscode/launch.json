@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: openSCHEMA loader",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
+            "args": ["-f", "openVSLAM", "-m", "load"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
             "name": "Python: openVSLAM msgpack to db",
             "type": "python",
             "request": "launch",
@@ -27,7 +39,7 @@
             }
         },
         {
-            "name": "Profile: openVSLAM db to msgpack",
+            "name": "__Profile: openVSLAM db to msgpack",
             "type": "python",
             "request": "launch",
             "module": "cProfile",
