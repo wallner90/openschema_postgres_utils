@@ -14,16 +14,11 @@ from openschema_alchemy.model import *
 from datetime import datetime
 from pathlib import Path
 
-from math import atan2, asin
+import openschema_utils as utils
 
 from tqdm import tqdm
 
 
-def quaternion_to_euler(qw, qx, qy, qz):
-    roll = atan2(2*(qw*qx + qy*qz), 1-2*(qx*qx + qy*qy))
-    pitch = asin(2*(qw*qy - qz*qx))
-    yaw = atan2(2*(qw*qz + qx*qy), 1-2*(qy*qy + qz*qz))
-    return [roll, pitch, yaw]
 
 
 msg_pack_file_path = Path(
@@ -90,7 +85,7 @@ with open(msg_pack_file_path, "rb") as data_file:
 
         trans_cw = keyframe_msgpack["trans_cw"]
         # TODO: Calculate unit vector from quaternion and add to pose
-        euler = quaternion_to_euler(*keyframe_msgpack["rot_cw"])
+        euler = utils.quaternion_to_euler(*keyframe_msgpack["rot_cw"])
         pose = Pose(
             position=f"POINTZ({trans_cw[0]} {trans_cw[1]} {trans_cw[2]})",
             normal=f"POINTZ({euler[0]} {euler[1]} {euler[2]})", # TODO: normal vector or euler?

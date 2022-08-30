@@ -17,28 +17,14 @@ from openschema_alchemy.model import *
 from datetime import datetime
 from pathlib import Path
 
-from math import sin, cos
-
 from tqdm import tqdm
+
+import openschema_utils as utils
 
 
 def find_index(list, condition):
     return [i for i, elem in enumerate(list) if condition(elem)]
 
-
-def euler_to_quaternion(roll, pitch, yaw):
-    cy = cos(yaw * 0.5)
-    sy = sin(yaw * 0.5)
-    cp = cos(pitch * 0.5)
-    sp = sin(pitch * 0.5)
-    cr = cos(roll * 0.5)
-    sr = sin(roll * 0.5)
-
-    qw = cr * cp * cy + sr * sp * sy
-    qx = sr * cp * cy - cr * sp * sy
-    qy = cr * sp * cy + sr * cp * sy
-    qz = cr * cp * sy - sr * sp * cy
-    return [qw, qx, qy, qz]
 
 
 msg_pack_file_path = Path(
@@ -185,7 +171,7 @@ with open(msg_pack_file_path, "wb") as output_file:
                              'loop_edges': loop_edges,
                              'n_keypts': len(observation.camera_keypoint),
                              'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
-                             'rot_cw': euler_to_quaternion(
+                             'rot_cw': utils.euler_to_quaternion(
                                  roll=session.execute(
                                      func.ST_X(observation.pose.normal)).scalar(),
                                  pitch=session.execute(

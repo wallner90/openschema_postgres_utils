@@ -1,53 +1,69 @@
 import argparse
 from pathlib import Path
+from xmlrpc.client import Boolean
 from sqlalchemy import create_engine
+from sqlalchemy.schema import CreateSchema
 from sqlalchemy.orm import sessionmaker
+
+import openschema_utils
+import model
+import openVSLAM_io
 
 
 def main():
     file_formats = ["openVSLAM", "maplab", "lanemap", "lidar"]
-    parser = argparse.ArgumentParser(description="openSCHEMA data loader: Load and store data to postgreSQL database.")
-    parser.add_argument("-m", "--mode", type=str, choices=["load", "store"], required=True, help="Use 'load' to fetch data from the database to the given format, or 'store' to push data into the database.")
-    parser.add_argument("-f", "--format", type=str, choices=file_formats, required=True, help="Dataformat of the file given using '--output_file' or '--input_file' resp.")
-    parser.add_argument("-c", "--db_connection", type=str, default="postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait", help="URI of the database to connect to.")
+    parser = argparse.ArgumentParser(
+        description="openSCHEMA data loader: Load and store data to postgreSQL database.")
+    parser.add_argument("-m", "--mode", type=str, choices=["to_file", "to_db"], required=True,
+                        help="Use 'to_file' to fetch data from the database to the given format, or 'to_db' to push data into the database.")
+    parser.add_argument("-f", "--format", type=str, choices=file_formats, required=True,
+                        help="Dataformat of the file given using '--output_file' or '--input_file' resp.")
+    parser.add_argument("-c", "--db_connection", type=str,
+                        default="postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait", help="URI of the database to connect to.")
     parser.add_argument("-n", "--map_name", type=str)
-    parser.add_argument("-o", "--output_file", type=str, help="Full path to output file if 'store' is chosen'.")
-    parser.add_argument("-i", "--input_file", type=str, help="Full path to input file if 'load' is chosen'.")
+    parser.add_argument("-o", "--output_file", type=str,
+                        help="Full path to output file if 'to_file' is chosen'.")
+    parser.add_argument("-i", "--input_file", type=str,
+                        help="Full path to input file if 'to_db' is chosen'.")
+    parser.add_argument("--create_public_schema", action='store_true',
+                        help="For 'to_db' mode only: Create schema 'public' if it does not exist.")
     args = parser.parse_args()
-
-    # Sanity checks
-    if args.mode == 'load' and (args.input_file == None or not Path(args.input_file).isfile):
-        print(f"Error: Loading from file {args.input_file} not possible!")
-        return
-    if args.mode == "store" and not Path(args.output_file).is_dir():
-        print(f"Error: {args.output_file} is no valid directory!")
+    if not openschema_utils.args_sanity_check(args):
         return
 
     engine = create_engine(args.db_connection)
+    if args.mode == "to_db" and args.create_public_schema == True:
+        if not engine.dialect.has_schema(engine, 'public'):
+            engine.execute(CreateSchema('public'))
+        model.Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
 
     if args.format == "openVSLAM":
-        if args.mode == "load":
-            print("WARNING: Not implemented yet: load from openVSLAM format.")
-        elif args.mode == "store":
-            print("WARNING: Not implemented yet: store from openVSLAM format.")
+        if args.mode == "to_file":
+            print("WARNING: Not implemented yet: store into openVSLAM format from db.")
+        elif args.mode == "to_db":
+            print("INFO: Load data from openVSLAM format into database...")
+            openVSLAM_io.to_db(session=session,
+                               input_file=args.input_file,
+                               map_name=args.map_name)
     if args.format == "maplab":
-        if args.mode == "load":
-            print("WARNING: Not implemented yet: load from maplab format.")
-        elif args.mode == "store":
-            print("WARNING: Not implemented yet: store from maplab format.")
+        if args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into maplab format from db.")
+        elif args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into db from maplab format.")
     if args.format == "lanemap":
-        if args.mode == "load":
-            print("WARNING: Not implemented yet: load from lanemap format.")
-        elif args.mode == "store":
-            print("WARNING: Not implemented yet: store from lanemap format.")
+        if args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into lanemap format from db.")
+        elif args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into db from lanemap format.")
     if args.format == "lidar":
-        if args.mode == "load":
-            print("WARNING: Not implemented yet: load from lidar format.")
-        elif args.mode == "store":
-            print("WARNING: Not implemented yet: store from lidar format.")
-
+        if args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into lidar format from db.")
+        elif args.mode == "to_db":
+            print("WARNING: Not implemented yet: store into db from lidar format.")
+    # else not neccessary using argparse
+    return
 
 
 if __name__ == '__main__':

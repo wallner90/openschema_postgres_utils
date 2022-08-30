@@ -5,11 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: openSCHEMA loader",
+            "name": "Python: openSCHEMA loader: store openVSLAM",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
-            "args": ["-f", "openVSLAM", "-m", "load"],
+            "args": [
+                "-m",
+                "to_db",
+                "-f",
+                "openVSLAM",
+                "-c",
+                "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
+                "-n",
+                "test_map_loader",
+                "-i",
+                "/workspaces/openschema_postgres_utils/data/knapp_2022_03_03_dobl_test_env.msg",
+                "--create_public_schema"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
@@ -44,7 +56,9 @@
             "request": "launch",
             "module": "cProfile",
             "args": [
-                "-o", "/tmp/tmp.prof", "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py"
+                "-o",
+                "/tmp/tmp.prof",
+                "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
