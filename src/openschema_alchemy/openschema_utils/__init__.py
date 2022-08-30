@@ -38,3 +38,6 @@ def args_sanity_check(args) -> bool:
             print(f"Error: {args.output_file} is no valid directory!")
             return False
     return True
+
+def find_index(list, condition):
+    return [i for i, elem in enumerate(list) if condition(elem)]

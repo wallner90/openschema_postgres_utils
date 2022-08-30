@@ -3,23 +3,25 @@
 ## Structure
 ``` text
 .
-├── CMakeLists.txt
-├── app
-│   └── main.cpp                <- Examples how to use the utils
-├── include
-│   ├── exampleConfig.h.in
-│   └── postgres_utils.h        <- PostgreSQL Utils header
-├── src
-│   └── postgres_utils.cpp      <- PostgreSQL Utils implementation
-└── tests
-    ├── test_utils.cpp          <- [WIP] Unit- and integration tests
-    └── main.cpp
+.devcontainer/              <-- VSCode devcontainer settings
+.github/workflows/          <-- github specific workflow settings
+.vscode/                    <-- VSCode specific settings, launch settings
+src/
+├─ model/                   <-- openSCHEMA ORM model
+├─ openschema_utils/        <-- math and i/o utils
+├─ openVSLAM_io/            <-- openVSLAM specific i/o utils
+├─ openschema_loader.py     <-- tool to load data to and from the db
+.gitignore
+Dockerfile                  <-- Dockerfile used by VSCode with all deps
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+tox.ini
 ```
 
-Sources go in [src/](src/), header files in [include/](include/), main programs in [app/](app), and
-tests go in [tests/](tests/) (compiled to `unit_tests` by default).
-
-## Building w/ Visual Studio Code (+devcontainer)
+## Setup with Visual Studio Code (+devcontainer)
 Navigate to base directory and open with VSCode:
 ``` bash
 > cd openschema_postgres_utils
@@ -27,28 +29,16 @@ Navigate to base directory and open with VSCode:
 ```
 Use `Ctrl+Shift+P` and `Remote-Container: Reopen in Container`.
 
-Build the project using the CMake extension using `Ctrl+Shift+P` and `CMake: Build`.
-
-The example can be launched using the Run (and debug) target `debug main`.
-
-## Building w/o VSCode
-
-Build by making a build directory (i.e. `build/`), run `cmake` in that dir, and then use `make` to build the desired target.
-
-Example:
-
-``` bash
-> mkdir build && cd build
-> cmake .. -DCMAKE_BUILD_TYPE=[Debug | Coverage | Release]
-> make
-> ./main
-> make test      # Makes and runs the tests.
-> make coverage  # Generate a coverage report.
-> make doc       # Generate html documentation.
-```
-
 ## .gitignore
 
 The [.gitignore](.gitignore) file is a copy of the [Github C++.gitignore file](https://github.com/github/gitignore/blob/master/C%2B%2B.gitignore),
 with the addition of ignoring the build directory (`build/`).
 
+## FFG Project
+[DE ]Die FFG ist die zentrale nationale Förderorganisation und stärkt Österreichs Innovationskraft. Dieses Projekt wird aus Mitteln der FFG gefördert. 
+
+[EN] FFG is the central national funding organization and strengthens Austria's innovative power. This project is funded by the FFG. 
+
+[www.ffg.at](www.ffg.at)
+
+Projekt: [openSCHEMA](https://iktderzukunft.at/de/projekte/open-semantic-collaborative-hierarchical-environment-mapping.php)

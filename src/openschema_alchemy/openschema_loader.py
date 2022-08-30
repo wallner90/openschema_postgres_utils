@@ -41,7 +41,10 @@ def main():
 
     if args.format == "openVSLAM":
         if args.mode == "to_file":
-            print("WARNING: Not implemented yet: store into openVSLAM format from db.")
+            print("INFO: Load data from database into openVSLAM format...")
+            openVSLAM_io.to_file(session=session,
+                               output_file=args.output_file,
+                               map_name=args.map_name)
         elif args.mode == "to_db":
             print("INFO: Load data from openVSLAM format into database...")
             openVSLAM_io.to_db(session=session,
