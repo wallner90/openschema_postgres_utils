@@ -5,6 +5,7 @@ from pathlib import Path
 import openschema_utils as utils
 from geoalchemy2 import func
 from tqdm import tqdm
+from collections import defaultdict
 
 def to_db(session, input_file, map_name):
     with open(input_file, "rb") as data_file:
@@ -143,6 +144,22 @@ def to_file(session, output_file, map_name):
     for idx, landmark in enumerate(all_landmarks):
         landmark_uuid_idx_map[landmark.id] = idx
 
+    all_keypoints_optimized_query = "SELECT " \
+                                    " camera_observation_id AS kf_id, landmark_id AS lm_id, ST_X(point) AS pt_u, ST_Y(point) AS pt_v, descriptor->'openVSLAM'->'depth' AS depth, descriptor->'openVSLAM'->'x_right' AS x_right, descriptor->'openVSLAM'->'ang' AS ang, descriptor->'openVSLAM'->'oct' AS oct, descriptor->'openVSLAM'->'ORB' as ORB, descriptor->'openVSLAM'->'undist' AS undist " \
+                                    " FROM camera_keypoint " \
+                                    " JOIN camera_observation ON camera_observation.id = camera_keypoint.camera_observation_id " \
+                                    " JOIN camera ON camera.id = camera_observation.camera_sensor_id " \
+                                    " JOIN sensor ON sensor.id = camera.id " \
+                                    " JOIN sensor_rig ON sensor_rig.id = sensor.sensor_rig_id " \
+                                    " JOIN posegraph ON posegraph.id = sensor_rig.posegraph_id " \
+                                    " JOIN map ON map.id = posegraph.map_id " \
+                                    f" WHERE map.name = '{map_name}' " 
+    all_keypoints_optimized = session.execute(all_keypoints_optimized_query).all()
+
+    all_keypoints_optimized_dict = defaultdict(list)
+    for kp in all_keypoints_optimized:
+        all_keypoints_optimized_dict[kp.kf_id].append(kp)
+
 
     with open(msg_pack_file_path, "wb") as output_file:
         data = {}
@@ -186,20 +203,6 @@ def to_file(session, output_file, map_name):
                                 'pos_w': [special_landmark_query.pos_x, special_landmark_query.pos_y, special_landmark_query.pos_z]
                                 }
 
-        # -> Deprecated: TOO SLOW!! Use special query -> TODO: rewrite with ORM functionality instead of plain SQL!
-        # for landmark in tqdm(all_landmarks, desc="Landmarks"):
-        #     lm_idx = str(all_landmarks.index(landmark))
-        #     landmarks[lm_idx] = {'1st_keyfrm': all_observations.index(landmark.camera_keypoints[0].camera_observation) if len(
-        #         landmark.camera_keypoints) > 0 else -1,
-        #         'n_fnd': len(landmark.camera_keypoints),
-        #         'n_vis': len(landmark.camera_keypoints),
-        #         'pos_w': [session.execute(func.ST_X(landmark.position)).scalar(),
-        #                   session.execute(
-        #             func.ST_Y(landmark.position)).scalar(),
-        #         session.execute(func.ST_Z(landmark.position)).scalar()]
-        #     }
-        # data['landmarks'] = landmarks
-
         keyframes = {}
         for observation in tqdm(all_observations, desc="Observations"):
             # kf_idx = str(all_observations.index(observation))
@@ -217,29 +220,30 @@ def to_file(session, output_file, map_name):
             #                    " FROM camera_keypoint " \
             #                    f" WHERE camera_observation_id = '{observation.id}';"
 
-            # for keypoint in session.execute(optimized_keypoint_query).all():
-            #     depths.append(keypoint.depth)
-            #     x_rights.append(keypoint.x_right)
-            #     keypoints.append({'ang': keypoint.ang,
-            #                     'oct': keypoint.oct,
-            #                     'pt': [keypoint.pt_u, keypoint.pt_v]})
-            #     descs.append(keypoint.orb)
-            #     lm_ids.append(landmark_uuid_idx_map[keypoint.lm_id]
-            #                 if keypoint.lm_id in all_landmarks else -1)
-            #     undist.append(keypoint.undist)
+            current_frame_kps = all_keypoints_optimized_dict[observation.id]
+            for keypoint in current_frame_kps:
+                depths.append(keypoint.depth)
+                x_rights.append(keypoint.x_right)
+                keypoints.append({'ang': keypoint.ang,
+                                'oct': keypoint.oct,
+                                'pt': [keypoint.pt_u, keypoint.pt_v]})
+                descs.append(keypoint.orb)
+                lm_ids.append(landmark_uuid_idx_map[keypoint.lm_id]
+                            if keypoint.lm_id in all_landmarks else -1)
+                undist.append(keypoint.undist)
 
             # TOO Slow -> using optimized keypoint query
-            for keypoint in observation.camera_keypoint:
-                depths.append(keypoint.descriptor['openVSLAM']['depth'])
-                x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
-                keypoints.append({'ang': keypoint.descriptor['openVSLAM']['ang'],
-                                'oct': keypoint.descriptor['openVSLAM']['oct'],
-                                'pt': [session.execute(func.ST_X(keypoint.point)).scalar(),
-                                        session.execute(func.ST_Y(keypoint.point)).scalar()]})
-                descs.append(keypoint.descriptor['openVSLAM']['ORB'])
-                lm_ids.append(landmark_uuid_idx_map[keypoint.landmark.id]
-                            if keypoint.landmark in all_landmarks else -1)
-                undist.append(keypoint.descriptor['openVSLAM']['undist'])
+            # for keypoint in observation.camera_keypoint:
+            #     depths.append(keypoint.descriptor['openVSLAM']['depth'])
+            #     x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
+            #     keypoints.append({'ang': keypoint.descriptor['openVSLAM']['ang'],
+            #                     'oct': keypoint.descriptor['openVSLAM']['oct'],
+            #                     'pt': [session.execute(func.ST_X(keypoint.point)).scalar(),
+            #                             session.execute(func.ST_Y(keypoint.point)).scalar()]})
+            #     descs.append(keypoint.descriptor['openVSLAM']['ORB'])
+            #     lm_ids.append(landmark_uuid_idx_map[keypoint.landmark.id]
+            #                 if keypoint.landmark in all_landmarks else -1)
+            #     undist.append(keypoint.descriptor['openVSLAM']['undist'])
 
             span_children = [all_observations.index(x) if x in all_observations else None
                             for x in session.query(Observation)
