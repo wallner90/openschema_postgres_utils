@@ -8,6 +8,8 @@ from sqlalchemy.orm import sessionmaker
 import openschema_utils
 import model
 import openVSLAM_io
+import lane_map_json_to_db as lanemap_io
+import lidar_karte_to_db as lidar_io
 
 
 def main():
@@ -58,15 +60,13 @@ def main():
     if args.format == "lanemap":
         if args.mode == "to_db":
             print("INFO: Load data from Lanemap format into database...")
-            openVSLAM_io.to_db(session=session,
-                               input_file=args.input_file,
-                               map_name=args.map_name)
+            lanemap_io.to_db(session=session,
+                               input_file=args.input_file)
     if args.format == "lidar":
         if args.mode == "to_db":
             print("INFO: Load data from Lidar format into database...")
-            openVSLAM_io.to_db(session=session,
-                               input_file=args.input_file,
-                               map_name=args.map_name)
+            lidar_io.to_db(session=session,
+                               input_file=args.input_file)
     # else not neccessary using argparse
     return
 
