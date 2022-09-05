@@ -57,14 +57,16 @@ def main():
             print("WARNING: Not implemented yet: store into db from maplab format.")
     if args.format == "lanemap":
         if args.mode == "to_db":
-            print("WARNING: Not implemented yet: store into lanemap format from db.")
-        elif args.mode == "to_db":
-            print("WARNING: Not implemented yet: store into db from lanemap format.")
+            print("INFO: Load data from Lanemap format into database...")
+            openVSLAM_io.to_db(session=session,
+                               input_file=args.input_file,
+                               map_name=args.map_name)
     if args.format == "lidar":
         if args.mode == "to_db":
-            print("WARNING: Not implemented yet: store into lidar format from db.")
-        elif args.mode == "to_db":
-            print("WARNING: Not implemented yet: store into db from lidar format.")
+            print("INFO: Load data from Lidar format into database...")
+            openVSLAM_io.to_db(session=session,
+                               input_file=args.input_file,
+                               map_name=args.map_name)
     # else not neccessary using argparse
     return
 
