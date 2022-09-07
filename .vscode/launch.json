@@ -43,7 +43,7 @@
                 "-n",
                 "test_map_loader",
                 "-i",
-                "/workspaces/openschema_postgres_utils/data/knapp_map/map.pgm",
+                "/workspaces/openschema_postgres_utils/data/knapp_map/map.yaml",
                 "--create_public_schema"
             ],
             "console": "integratedTerminal",
