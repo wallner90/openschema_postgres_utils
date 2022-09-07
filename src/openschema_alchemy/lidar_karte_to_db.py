@@ -77,3 +77,4 @@ def to_db(session, input_file):
             lidar_keypoints.append(lkp)
 
         session.add_all(lidar_keypoints)
+        session.commit()

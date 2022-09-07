@@ -5,6 +5,54 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: openSCHEMA loader: lanemap file->db",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
+            "args": [
+                "-m",
+                "to_db",
+                "-f",
+                "lanemap",
+                "-c",
+                "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
+                "-n",
+                "test_map_loader",
+                "-i",
+                "/workspaces/openschema_postgres_utils/data/knapp_map/lane_map.json",
+                "--create_public_schema"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Python: openSCHEMA loader: LiDAR file->db",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
+            "args": [
+                "-m",
+                "to_db",
+                "-f",
+                "lidar",
+                "-c",
+                "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
+                "-n",
+                "test_map_loader",
+                "-i",
+                "/workspaces/openschema_postgres_utils/data/knapp_map/map.pgm",
+                "--create_public_schema"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
             "name": "Python: openSCHEMA loader: openVSLAM file->db",
             "type": "python",
             "request": "launch",
