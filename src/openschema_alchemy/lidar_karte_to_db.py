@@ -70,7 +70,7 @@ def to_db(session, input_file, map_name):
                     if p > occupied_thresh:
                         lm = Landmark(position=f"POINTZ({x_cord} {y_cord} {0})")
                         landmarks.append(lm)
-                        keypoints.append(LIDARKeypoint(lidar_observation=lidar_observation, landmark=lm))
+                        keypoints.append(LIDARKeypoint(observation=lidar_observation, landmark=lm))
                         
 
             session.add_all([new_map, pg, sensor_rig, lidar, lidar_observation] + landmarks + keypoints)

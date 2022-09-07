@@ -379,52 +379,67 @@ class BetweenEdge(Edge):
         "polymorphic_identity": ObservationEdgeType.Between,
     }
 
+class KeypointType(enum.Enum):
+    Keypoint = "keypoint"
+    Camera = "camera_keypoint"
+    LIDAR = "lidar_keypoint"
+    Semantic = "semantic_keypoint"
 
-class CameraKeypoint(Base):
-    __tablename__ = "camera_keypoint"
+def keypoint_table_name(type: KeypointType) -> str:
+    return f"{type.value}"
+
+class Keypoint(Base):
+    __tablename__ = KeypointType.Keypoint.value
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
-    camera_observation_id = Column(
-        UUID(as_uuid=True), ForeignKey("camera_observation.id"))
+    observation_id = Column(
+        UUID(as_uuid=True), ForeignKey("observation.id"))
     point = Column(Geometry("POINT"))
     descriptor = Column(
         JSON, comment="Descriptor (algorithm specific) with needed extra info (e.g., disparity, octave, depth, angle, semantics,...).")
     landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
 
-    landmark = relationship('Landmark', backref='camera_keypoints')
-    
-    camera_observation = relationship('CameraObservation', backref='camera_keypoint')
+    landmark = relationship('Landmark', backref='keypoints')
+    observation = relationship('Observation', backref='keypoints')
+
+    type = Column(Enum(KeypointType))
+
+    __mapper_args__ = {
+        "polymorphic_identity": KeypointType.Keypoint,
+        "polymorphic_on": type,
+    }
+
+    __table_args__ = (
+        CheckConstraint(f"type != '{KeypointType.Keypoint.name}'", name="keypoint_is_abstract"),
+    )
 
 
-class LIDARKeypoint(Base):
-    __tablename__ = "lidar_keypoint"
-    id = Column(UUID(as_uuid=True), primary_key=True,
-                server_default=text("uuid_generate_v4()"))
-    lidar_observation_id = Column(
-        UUID(as_uuid=True), ForeignKey("lidar_observation.id"))
-    point = Column(Geometry(
-        "POINTZ"), comment="Sensor reading in sensor coordinate frame; null if not used.")
-    descriptor = Column(
-        JSON, comment="Descriptor (sensor specific), e.g. RSSI, semantics, etc..")
-    landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
+class CameraKeypoint(Keypoint):
+    __tablename__ = keypoint_table_name(KeypointType.Camera)
+    id = Column(UUID(as_uuid=True), ForeignKey("keypoint.id"), primary_key=True)
 
-    landmark = relationship('Landmark', backref='lidar_keypoints')
-    lidar_observation = relationship('LIDARObservation', backref='lidar_keypoints')
+    __mapper_args__ = {
+        "polymorphic_identity":  KeypointType.Camera
+    }
 
-class SemanticKeypoint(Base):
-    __tablename__ = "semantic_keypoint"
-    id = Column(UUID(as_uuid=True), primary_key=True,
-                server_default=text("uuid_generate_v4()"))
-    semantic_observation_id = Column(
-        UUID(as_uuid=True), ForeignKey(f"{observation_table_name(ObservationType.Semantic)}.id"))
-    point = Column(Geometry("POINTZ"),
-                   comment="Observation in sensor frame; null if manual entry.")
-    descriptor = Column(
-        JSON, comment="Descriptor (algorithm / detctor specific), e.g. class (Palette, House, Agent, ...), stability, etc..")
-    landmark_id = Column(UUID(as_uuid=True), ForeignKey("landmark.id"))
+class LIDARKeypoint(Keypoint):
+    __tablename__ = keypoint_table_name(KeypointType.LIDAR)
+    id = Column(UUID(as_uuid=True), ForeignKey("keypoint.id"), primary_key=True)
 
-    landmark = relationship('Landmark', backref='semantic_keypoints')
-    semantic_observation = relationship('SemanticObservation', backref='semantic_keypoints')
+    # lidar_observation = relationship('LIDARObservation', backref='lidar_keypoints')
+
+    __mapper_args__ = {
+        "polymorphic_identity":  KeypointType.LIDAR
+    }
+
+class SemanticKeypoint(Keypoint):
+    __tablename__ = keypoint_table_name(KeypointType.Semantic)
+    id = Column(UUID(as_uuid=True), ForeignKey("keypoint.id"), primary_key=True)
+
+    # semantic_observation = relationship('SemanticObservation', backref='semantic_keypoints')
+    __mapper_args__ = {
+        "polymorphic_identity":  KeypointType.Semantic
+    }
 
 # A manual/virtual landmark may be attached to another observed landmark or it may be have it's own observation
 # relatively attached to a pose via the semantic keypoint or the landmark just exists independently

@@ -94,7 +94,7 @@ def to_db(session, input_file, map_name):
                                                   'oct': keypt['oct'],
                                                   'undist': undist}
                                                  },
-                                     camera_observation=camera_observation)
+                                     observation=camera_observation)
                 if lm_id != -1 and int(lm_id) in landmarks.keys():
                     ckp.landmark = landmarks[int(lm_id)]
                 camera_keypoints.append(ckp)
@@ -138,7 +138,7 @@ def to_file(session, output_file, map_name):
     for idx, observation in enumerate(all_observations):
         observation_uuid_idx_map[observation.id] = idx
 
-    all_landmarks = session.query(Landmark).join(CameraKeypoint).join(Observation, CameraKeypoint.camera_observation_id ==
+    all_landmarks = session.query(Landmark).join(CameraKeypoint).join(Observation, CameraKeypoint.observation_id ==
                                                                     Observation.id).join(Pose).join(PoseGraph).join(Map).filter(Map.name == map_name).all()
     # UUID -> IDX mapping
     landmark_uuid_idx_map = {}
@@ -178,11 +178,13 @@ def to_file(session, output_file, map_name):
             "FROM ( " \
             "    SELECT landmark.*, COUNT(*) AS n_vis " \
             "        FROM landmark " \
-            "            JOIN camera_keypoint ON camera_keypoint.landmark_id = landmark.id " \
+            "            JOIN keypoint ON keypoint.landmark_id = landmark.id " \
+            "            RIGHT JOIN camera_keypoint ON camera_keypoint.id = keypoint.id " \
             "        GROUP BY landmark.id " \
             ") AS landmarks_with_count  " \
-            "    JOIN camera_keypoint ON camera_keypoint.landmark_id = landmarks_with_count.id " \
-            "    JOIN camera_observation ON camera_observation.id = camera_keypoint.camera_observation_id" \
+            "    JOIN keypoint ON keypoint.landmark_id = landmarks_with_count.id " \
+            "    RIGHT JOIN camera_keypoint ON camera_keypoint.id = keypoint.id " \
+            "    JOIN camera_observation ON camera_observation.id = keypoint.observation_id" \
             "    JOIN observation ON observation.id = camera_observation.id " \
             "    JOIN pose ON pose.id = observation.pose_id " \
             "    JOIN posegraph ON posegraph.id = pose.posegraph_id " \
@@ -208,7 +210,7 @@ def to_file(session, output_file, map_name):
             lm_ids = []
             undist = []
 
-            for keypoint in observation.camera_keypoint:
+            for keypoint in observation.keypoints:
                 depths.append(keypoint.descriptor['openVSLAM']['depth'])
                 x_rights.append(keypoint.descriptor['openVSLAM']['x_right'])
                 keypoints.append({'ang': keypoint.descriptor['openVSLAM']['ang'],
@@ -245,7 +247,7 @@ def to_file(session, output_file, map_name):
                                 'keypts': keypoints,
                                 'lm_ids': lm_ids,
                                 'loop_edges': loop_edges,
-                                'n_keypts': len(observation.camera_keypoint),
+                                'n_keypts': len(observation.keypoints),
                                 'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
                                 'rot_cw': utils.euler_to_quaternion(
                                     roll=session.execute(
