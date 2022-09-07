@@ -17,7 +17,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader",
+                "test_map_loader_lanemap",
                 "-i",
                 "/workspaces/openschema_postgres_utils/data/knapp_map/lane_map.json",
                 "--create_public_schema"
@@ -41,7 +41,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader",
+                "test_map_loader_lidar",
                 "-i",
                 "/workspaces/openschema_postgres_utils/data/knapp_map/map.yaml",
                 "--create_public_schema"
@@ -65,7 +65,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader",
+                "test_map_loader_openvslam",
                 "-i",
                 "/workspaces/openschema_postgres_utils/data/knapp_2022_03_03_dobl_test_env.msg",
                 "--create_public_schema"
@@ -89,7 +89,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader",
+                "test_map_loader_openvslam",
                 "-o",
                 "/workspaces/openschema_postgres_utils/data/output_file_test.msg",
             ],
@@ -99,52 +99,5 @@
                 "PYTHONPATH": "${workspaceFolder}/src"
             }
         },
-        {
-            "name": "Python: openVSLAM msgpack to db",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_msgpack_to_db.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            }
-        },
-        {
-            "name": "Python: openVSLAM db to msgpack",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            }
-        },
-        {
-            "name": "__Profile: openVSLAM db to msgpack",
-            "type": "python",
-            "request": "launch",
-            "module": "cProfile",
-            "args": [
-                "-o",
-                "/tmp/tmp.prof",
-                "${workspaceFolder}/src/openschema_alchemy/openvslam_db_to_msgpack.py"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            }
-        },
-        {
-            "name": "Python: Example",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/openschema_alchemy/example.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            }
-        }
     ]
 }
