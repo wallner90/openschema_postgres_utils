@@ -11,10 +11,14 @@ from model import *
 
 json_file_path = Path(
     "lane_map.json")
-pi = 22/7
+pi = 22 / 7
+
+
 def to_db(session, input_file):
     with open(input_file, "rb") as data_file:
-        loaded_data = json.load(data_file)
+        l = json.load(data_file)
+        x = json.dumps(l, ensure_ascii=True)
+        loaded_data = json.loads(x)
 
         engine = create_engine(
             'postgresql://postgres:postgres@127.0.0.1:5432/postgres_alchemy_ait', echo=False)
@@ -36,8 +40,8 @@ def to_db(session, input_file):
         semantic_lines_info = {}
         semantic_line_id = 0
         for lane in list(lanes):
-            print(lane)
-            goal_id_1 = lane["startNodeId"] - 1 # goal 1 is start Node!
+            print("lane is ", lane)
+            goal_id_1 = lane["startNodeId"] - 1  # goal 1 is start Node!
             goal1 = goals[goal_id_1]
             goal_pos1 = goal1["pose"]
             pos_x = goal_pos1["x"]
@@ -50,8 +54,9 @@ def to_db(session, input_file):
                         relatedStations.append(station)
 
             landmarks[goal_id_1] = Landmark(position=f'POINTZ({pos_x} {pos_y} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw*(180/pi)) * cos(0)} {0} {cos(pos_yaw*(180/pi)) * cos(0)})',
-                                            descriptor={"stations": relatedStations, "goalId": goal_id_1, "goalProperty": goal1["goalProperty"]})
+                                            normal=f'POINTZ({sin(pos_yaw * (180 / pi)) * cos(0)} {0} {cos(pos_yaw * (180 / pi)) * cos(0)})',
+                                            descriptor={"stations": relatedStations, "goalId": goal_id_1,
+                                                        "goalProperty": goal1["goalProperty"]})
             goal_id_2 = lane["endNodeId"] - 1  # goal 2 is end Node!
             goal2 = goals[goal_id_2]
             goal_pos2 = goal2["pose"]
@@ -66,19 +71,19 @@ def to_db(session, input_file):
                         relatedStations.append(station)
 
             landmarks[goal_id_2] = Landmark(position=f'POINTZ({pos_x} {pos_y} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw*(180/pi)) * cos(0)} {0} {cos(pos_yaw*(180/pi)) * cos(0)})',
-                                            descriptor={"stations": relatedStations, "goalId": goal_id_2, "goalProperty": goal2["goalProperty"]})
+                                            normal=f'POINTZ({sin(pos_yaw * (180 / pi)) * cos(0)} {0} {cos(pos_yaw * (180 / pi)) * cos(0)})',
+                                            descriptor={"stations": relatedStations, "goalId": goal_id_2,
+                                                        "goalProperty": goal2["goalProperty"]})
             semantic_line1 = SemanticLineString(type="line_string")  # line String IS a geometry Objectu
             semantic_line1.landmarks.append(landmarks[goal_id_1])
             semantic_line1.landmarks.append(landmarks[goal_id_2])
             semantic_line2 = SemanticLineString(type="line_string")
             semantic_line2.landmarks.append(landmarks[goal_id_1])
             semantic_line2.landmarks.append(landmarks[goal_id_2])
-            print("virtual lane ", lane["type"]["virtualLane"])
-            forwardDriving = lane["type"]["virtualLane"]["forwardDirection"]["driveForwardOriented"]
-            forwardBackwardDriving = lane["type"]["virtualLane"]["forwardDirection"]["driveBackwardOriented"]
-            backwardDriving = lane["type"]["virtualLane"]["backwardDirection"]["driveForwardOriented"]
-            backwardBackwardDriving = lane["type"]["virtualLane"]["backwardDirection"]["driveBackwardOriented"]
+            forwardDriving = lane["virtualLane"]["forwardDirection"]["driveForwardOriented"]
+            forwardBackwardDriving = lane["virtualLane"]["forwardDirection"]["driveBackwardOriented"]
+            backwardDriving = lane["virtualLane"]["backwardDirection"]["driveForwardOriented"]
+            backwardBackwardDriving = lane["virtualLane"]["backwardDirection"]["driveBackwardOriented"]
 
             lanes_and_semantic_lanes[id] = [forwardDriving, backwardDriving, forwardBackwardDriving,
                                             backwardBackwardDriving]
@@ -94,8 +99,10 @@ def to_db(session, input_file):
         session.commit()
 
         for id, semantic_lane in semantic_lanes.items():
-            forwardDrivingInfo, backwardDrivingInfo, forwardBackwardDrivingInfo, backwardBackwardDrivingInfo = lanes_and_semantic_lanes[id]
-            print("right! ", forwardDrivingInfo, backwardDrivingInfo, forwardBackwardDrivingInfo, backwardBackwardDrivingInfo, id, semantic_lane.name)
+            forwardDrivingInfo, backwardDrivingInfo, forwardBackwardDrivingInfo, backwardBackwardDrivingInfo = \
+            lanes_and_semantic_lanes[id]
+            print("right! ", forwardDrivingInfo, backwardDrivingInfo, forwardBackwardDrivingInfo,
+                  backwardBackwardDrivingInfo, id, semantic_lane.name)
             laneInfo = ""
             drivingDirection = ""
             if forwardDrivingInfo:
@@ -119,7 +126,6 @@ def to_db(session, input_file):
                 laneInfo = "one_way"
                 drivingDirection = "backward"
             semantic_lane.description = {"laneInfo": laneInfo, "drivingDirection": drivingDirection}
-
 
         session.add_all(list(semantic_lanes.values()))
         session.commit()
