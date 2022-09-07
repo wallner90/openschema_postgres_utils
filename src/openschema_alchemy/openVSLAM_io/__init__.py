@@ -5,7 +5,8 @@ from pathlib import Path
 import openschema_utils as utils
 from geoalchemy2 import func
 from tqdm import tqdm
-from collections import defaultdict
+from sqlalchemy import table, column, select, join, func
+from sqlalchemy.dialects import postgresql
 
 def to_db(session, input_file, map_name):
     with open(input_file, "rb") as data_file:
@@ -153,6 +154,17 @@ def to_file(session, output_file, map_name):
         # TODO: frame_next_id needs to be checked?
         data['frame_next_id'] = data['keyframe_next_id'] = len(all_observations)
         data['landmark_next_id'] = len(all_landmarks)
+
+        # TODO: why does this not work with alchemy query? -> dialect postgres needed for "DISTINCT ON" -> issue?
+        # sub_query = select([Landmark, func.count().label("n_vis")]).select_from(Landmark).join(CameraKeypoint).group_by(Landmark.id).subquery()
+        # optimized_landmark_query = select([sub_query.c.id.label("lm_id"), 
+        #                 sub_query.c.n_vis.label("n_vis"), 
+        #                 CameraKeypoint.id.label("ckp_id"), 
+        #                 CameraObservation.id.label("cobs_id"),
+        #                 func.ST_X(sub_query.c.position).label("pos_x"),
+        #                 func.ST_Y(sub_query.c.position).label("pos_y"),
+        #                 func.ST_Z(sub_query.c.position).label("pos_z")]).distinct(sub_query.c.id).select_from(sub_query).join(CameraKeypoint).join(CameraObservation).join(Pose).join(PoseGraph).join(Map).filter(Map.name == map_name).compile(dialect=postgresql.dialect())
+        # print(str(optimized_landmark_query))
 
         # TODO: Do this with SQLAlchemy to avoid string matching!
         optimized_landmark_query = "SELECT DISTINCT ON (landmarks_with_count.id) " \

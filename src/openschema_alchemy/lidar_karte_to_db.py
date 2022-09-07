@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import np as np
+import numpy as np
 
 from PIL import Image
 from sqlalchemy import create_engine
