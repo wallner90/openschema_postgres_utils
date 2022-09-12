@@ -61,7 +61,8 @@ def main():
         if args.mode == "to_db":
             print("INFO: Load data from Lanemap format into database...")
             lanemap_io.to_db(session=session,
-                               input_file=args.input_file)
+                               input_file=args.input_file,
+                               map_name=args.map_name)
     if args.format == "lidar":
         if args.mode == "to_db":
             print("INFO: Load data from Lidar format into database...")
