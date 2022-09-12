@@ -1,17 +1,12 @@
-from math import sin, cos
+from math import sin, cos, pi
 from pathlib import Path
 
 import json
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.ddl import CreateSchema
 
 from model import *
 
 json_file_path = Path(
     "lane_map.json")
-pi = 22 / 7
 
 
 def to_db(session, input_file):
@@ -19,13 +14,6 @@ def to_db(session, input_file):
         l = json.load(data_file)
         x = json.dumps(l, ensure_ascii=True)
         loaded_data = json.loads(x)
-
-        engine = create_engine(
-            'postgresql://postgres:postgres@127.0.0.1:5432/postgres_alchemy_ait', echo=False)
-        if not engine.dialect.has_schema(engine, 'public'):
-            engine.execute(CreateSchema('public'))
-
-        Base.metadata.create_all(engine)
 
         #
         id = 0
