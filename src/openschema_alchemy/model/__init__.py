@@ -152,9 +152,9 @@ class Pose(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"),
-                      comment="Absolute (map) position of a pose (with orientation as unit normal vector).")
-    normal = Column(Geometry("POINTZ"),
-                           comment="Absolute orientation as normal vector in the map frame (at position).")
+                      comment="Absolute (map) position of a pose.")
+    rotation_vector = Column(Geometry("POINTZ"),
+                             comment="Absolute orientation as rotation vector in the map frame.")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
     uncertainty = Column(JSON,
@@ -344,7 +344,7 @@ class UnaryEdge(Edge):
 
     position = Column(Geometry("POINTZ"),
                       comment="Position off associated pose")
-    normal = Column(Geometry("POINTZ"),
+    rotation_vector = Column(Geometry("POINTZ"),
                            comment="Orientation (rotational component)")
 
     __mapper_args__ = {
@@ -371,7 +371,7 @@ class BetweenEdge(Edge):
         "observation.id"), nullable=False)
     rel_position = Column(Geometry("POINTZ"),
                       comment="Relative position change off associated pose")
-    rel_normal = Column(Geometry("POINTZ"),
+    rel_rotation_vector = Column(Geometry("POINTZ"),
                            comment="Relative orientation change (rotational component)")
     edge_info = Column(JSON, comment="Additional information, e.g., is loop edge")
 
@@ -454,8 +454,8 @@ class Landmark(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"))
-    normal = Column(Geometry("POINTZ"),
-                           comment="Absolute orientation as normal vector in the map frame (at position); null if not used.")
+    rotation_vector = Column(Geometry("POINTZ"),
+                           comment="Absolute orientation as rotation vector in the map frame (at position); null if not used.")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
     uncertainty = Column(JSON,

@@ -24,12 +24,20 @@ def quaternion_to_euler(qw, qx, qy, qz):
 def args_sanity_check(args) -> bool:
     # Sanity checks
     if args.mode == "to_db":
-        if args.input_file == None:
-            print(f"Error: Loading from file but 'input_file' is empty!")
-            return False
-        elif not Path(args.input_file).is_file():
-            print(f"Error: Loading from file {args.input_file} not possible!")
-            return False
+        if args.format == "maplab":
+            if args.input_dir == None:
+                print(f"Error: Loading from directory but 'input_dir' is empty!")
+                return False
+            elif not Path(args.input_dir).is_dir():
+                print(f"Error: Loading from directory {args.input_dir} not possible!")
+                return False
+        else:
+            if args.input_file == None:
+                print(f"Error: Loading from file but 'input_file' is empty!")
+                return False
+            elif not Path(args.input_file).is_file():
+                print(f"Error: Loading from file {args.input_file} not possible!")
+                return False
     elif args.mode == "to_file":
         if args.output_file == None:
             print(f"Error: Store to file but 'output_file' is empty!")
