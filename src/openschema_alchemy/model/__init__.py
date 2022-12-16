@@ -139,9 +139,8 @@ class PoseGraph(Base):
     description = Column(JSON)
     map_id = Column(UUID(as_uuid=True), ForeignKey("map.id"))
 
-    root_pose = relationship("Pose",
-                    primaryjoin="and_(PoseGraph.id==Pose.posegraph_id, "
-                        "Pose.parent_pose_id==null())", viewonly=True)
+    root_pose = relationship("Pose", primaryjoin="and_(PoseGraph.id==Pose.posegraph_id, "
+                                                 "Pose.parent_pose_id==null())", viewonly=True)
     poses = relationship("Pose", backref="posegraph")
     sensor_rig = relationship("SensorRig", backref="posegraph")
 
@@ -159,8 +158,7 @@ class Pose(Base):
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
     uncertainty = Column(JSON,
                          comment="Uncertainty parameters for model (e.g., covariance for gaussian).")
-    parent_pose_id = Column(
-        UUID(as_uuid=True), ForeignKey("pose.id"))
+    parent_pose_id = Column(UUID(as_uuid=True), ForeignKey("pose.id"))
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey("posegraph.id"), nullable=False)
 
     parent = relationship("Pose", backref="children", remote_side=[id])
@@ -195,7 +193,7 @@ class Observation(Base):
     __tablename__ = ObservationType.Observation.value
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
-    # Allowing this redundancy will allow us to use relationship and also contrainting the sensor
+    # Allowing this redundancy will allow us to use relationship and also constraining the sensor
     # type via the specific joined inherit table.
     # TODO: check if a view were better (at least as long it is no foreign key, does not work with views).
     sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"))
@@ -333,7 +331,7 @@ class Edge(Base):
     )
 
 
-# TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
+# TODO: We could implement n-ary associations via extra edge table (so that the associated ids are flexible)
 #       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
 #       a JSON blob would capture any data.
 class UnaryEdge(Edge):

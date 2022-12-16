@@ -31,6 +31,8 @@ def main():
     parser.add_argument("-i", "--input_file", type=str,
                         help="Full path to input file if 'to_db' is chosen.")
     parser.add_argument("--input_dir", type=str, help="Full path to input directory if mode='to_db' and format='maplab'.")
+    parser.add_argument("--output_dir", type=str, help="Full path to output directory if mode='to_file' and format='maplab'.")
+
     parser.add_argument("--create_public_schema", action='store_true',
                         help="For 'to_db' mode only: Create schema 'public' if it does not exist.")
     args = parser.parse_args()
@@ -48,18 +50,21 @@ def main():
 
     if args.mode == "to_db":
         print(f"INFO: Load data from '{args.format}' into database...")
-        loader_params = {'session': session, 'map_name': args.map_name}
+        importer_params = {'session': session, 'map_name': args.map_name}
         if args.format == "maplab":
-            loader_params['input_dir'] = args.input_dir
+            importer_params['input_dir'] = args.input_dir
         else:
-            loader_params['input_file'] = args.input_file
-        io_format[args.format].to_db(**loader_params)
+            importer_params['input_file'] = args.input_file
+        io_format[args.format].to_db(**importer_params)
 
     if args.mode == "to_file":
         print(f"INFO: Load data from database into '{args.format}' format...")
-        io_format[args.format].to_file(session=session,
-                                       output_file=args.output_file,
-                                       map_name=args.map_name)
+        exporter_params = {'session': session, 'map_name': args.map_name}
+        if args.format == "maplab":
+            exporter_params['output_dir'] = args.output_dir
+        else:
+            exporter_params['output_file'] = args.output_file
+        io_format[args.format].to_file(**exporter_params)
     # else not neccessary using argparse
     return
 

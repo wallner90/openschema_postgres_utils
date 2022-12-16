@@ -25,26 +25,34 @@ def args_sanity_check(args) -> bool:
     # Sanity checks
     if args.mode == "to_db":
         if args.format == "maplab":
-            if args.input_dir == None:
+            if not args.input_dir:
                 print(f"Error: Loading from directory but 'input_dir' is empty!")
                 return False
             elif not Path(args.input_dir).is_dir():
                 print(f"Error: Loading from directory {args.input_dir} not possible!")
                 return False
         else:
-            if args.input_file == None:
-                print(f"Error: Loading from file but 'input_file' is empty!")
+            if not args.input_file:
+                print(f"Error: Importing from file but 'input_file' is empty!")
                 return False
             elif not Path(args.input_file).is_file():
-                print(f"Error: Loading from file {args.input_file} not possible!")
+                print(f"Error: Importing from file {args.input_file} not possible!")
                 return False
     elif args.mode == "to_file":
-        if args.output_file == None:
-            print(f"Error: Store to file but 'output_file' is empty!")
-            return False
-        elif not Path(args.output_file).parent.is_dir():
-            print(f"Error: {args.output_file} is no valid directory!")
-            return False
+        if args.format == "maplab":
+            if not args.output_dir:
+                printf(f"Error: Exporting to directory but 'output_dir' is empty!")
+                return false
+            elif not Path(args.output_dir).is_dir():
+                printf(f"Error: Exporting to directory {args.output_dir} not possible!")
+                return false
+        else:
+            if not args.output_file:
+                print(f"Error: Exporting to file but 'output_file' is empty!")
+                return False
+            elif not Path(args.output_file).parent.is_dir():
+                print(f"Error: {args.output_file} is no valid directory!")
+                return False
     return True
 
 def find_index(list, condition):
