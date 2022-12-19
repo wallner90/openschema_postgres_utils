@@ -67,12 +67,12 @@ def to_db(session, input_dir, map_name):
             assert len(tracks_in_camera_at_keyframe) == len(landmarks_observed_in_camera_at_keyframe),\
                 f"[Error: Data inconsistency] Array lengths are not equal:" \
                 f" {len(tracks_in_camera_at_keyframe)} != {len(landmarks_observed_in_camera_at_keyframe)}"
-            for lm_id, x, y, track_id, descr in zip(landmarks_observed_in_camera_at_keyframe['landmark_index'],
-                                                    tracks_in_camera_at_keyframe['keypoint_measurement_0'],
-                                                    tracks_in_camera_at_keyframe['keypoint_measurement_1'],
-                                                    tracks_in_camera_at_keyframe['keypoint_track_id'],
-                                                    descriptors):
-                db_camera_keypoints.append(CameraKeypoint(point=f"POINT({x} {y})", descriptor=descr,
+            for lm_id, pos_x, pos_y, track_id, descr in zip(landmarks_observed_in_camera_at_keyframe['landmark_index'],
+                                                            tracks_in_camera_at_keyframe['keypoint_measurement_0'],
+                                                            tracks_in_camera_at_keyframe['keypoint_measurement_1'],
+                                                            tracks_in_camera_at_keyframe['keypoint_track_id'],
+                                                            descriptors.iterrows()):
+                db_camera_keypoints.append(CameraKeypoint(point=f"POINT({pos_x} {pos_y})", descriptor=descr[1][0],
                                                           observation=db_camera_observation,
                                                           landmark=db_landmarks[lm_id]))
             db_observations.append(db_camera_observation)
