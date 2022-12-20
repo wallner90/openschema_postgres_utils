@@ -49,7 +49,7 @@ def main():
     session = Session()
 
     if args.mode == "to_db":
-        print(f"INFO: Load data from '{args.format}' into database...")
+        print(f"INFO: Import data from '{args.format}' into database.")
         importer_params = {'session': session, 'map_name': args.map_name}
         if args.format == "maplab":
             importer_params['input_dir'] = args.input_dir
@@ -58,14 +58,13 @@ def main():
         io_format[args.format].to_db(**importer_params)
 
     if args.mode == "to_file":
-        print(f"INFO: Load data from database into '{args.format}' format...")
+        print(f"INFO: Export data from database into '{args.format}' format.")
         exporter_params = {'session': session, 'map_name': args.map_name}
         if args.format == "maplab":
             exporter_params['output_dir'] = args.output_dir
         else:
             exporter_params['output_file'] = args.output_file
         io_format[args.format].to_file(**exporter_params)
-    # else not neccessary using argparse
     return
 
 
