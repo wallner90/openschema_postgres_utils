@@ -5,18 +5,13 @@ from scipy.spatial.transform import Rotation
 from sqlalchemy import func, select
 from tqdm.asyncio import tqdm
 
-from .vimap import VImap
+from maplab.vimap.csv import VImap
 from model import SensorRig, Camera, CameraObservation, Map, PoseGraph, Landmark, Pose, CameraKeypoint, Sensor, \
     Observation
 
 
 def to_db(session, input_dir, map_name):
     vimap = VImap(input_dir)
-
-    m = session.query(Map).filter(Map.name == map_name).all()
-    for e in m:
-        session.delete(e)
-    session.commit()
 
     # TODO: get this information from VImap metadata
     ts = datetime.utcnow()

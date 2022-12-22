@@ -8,13 +8,13 @@ import model
 import openVSLAM_io
 import lane_map_json_io
 import lidar_io
-from maplab import maplab_csv_io
+from maplab import proto_io as maplab_io
 
 
 def main():
     # data format input/output with interface 'to_db' and 'to_file'
     io_format = {"openVSLAM": openVSLAM_io,
-                 "maplab": maplab_csv_io,
+                 "maplab": maplab_io,
                  "lidar": lidar_io,
                  "lanemap": lane_map_json_io}
     parser = argparse.ArgumentParser(
