@@ -1,5 +1,6 @@
 import gzip
 import numpy as np
+import os
 
 from maplab.summarymap.proto import summary_map_pb2
 
@@ -32,7 +33,7 @@ class SummaryMap:
 
     def load(self, map_dir: str, compressed: bool = True):
         self.map_dir = map_dir
-        print("SummaryMap: loading data")
+        print(f"Summary map: loading data from directory '{map_dir}'")
         with open(self.map_dir + '/localization_summary_map', 'rb') as file:
             data = file.read()
         if compressed:
@@ -63,6 +64,20 @@ class SummaryMap:
         # note descriptor data is stored in column-major format, hence cols and rows are switched
         self.visibility_edges_descriptor = np.array(descriptors.data).reshape(descriptors.cols, descriptors.rows)
 
+    def save(self, map_dir: str, compressed: bool = True):
+        self.map_dir = map_dir
+        if os.path.exists(map_dir):
+            print(f"Summary map: saving data into existing directory '{map_dir}'.")
+        else:
+            print(f"Summary map: saving data into new directory '{map_dir}'.")
+            os.mkdir(map_dir)
+        self._generate_message()
+        data = self._message.SerializeToString()
+        if compressed:
+            data = gzip.compress(data)
+        with open(self.map_dir + '/localization_summary_map', 'wb') as file:
+            file.write(data)
+
     def observers_by_landmark(self):
         observers = {}
         for edge in self.visibility_edges:
@@ -89,7 +104,7 @@ class SummaryMap:
         landmark_list, landmark_index = set_to_list_and_index_map(landmarks)
         submap.landmarks_position = self.landmarks_position[landmark_list]
 
-        # collect all visibility edges
+        # collect the corresponding visibility edges
         visibility_edges = []
         visibility_edges_descriptor = []
         for edge_index, edge in enumerate(self.visibility_edges):
@@ -99,3 +114,44 @@ class SummaryMap:
         submap.visibility_edges = np.array(visibility_edges)
         submap.visibility_edges_descriptor = np.array(visibility_edges_descriptor)
         return submap
+
+    def submap_from_landmarks(self, landmarks: set):
+        # collect all observers
+        observers_by_all_landmarks = self.observers_by_landmark()
+        observers_by_landmarks = {lm: observers_by_all_landmarks[lm] for lm in landmarks}
+        observers = set()
+        for obs in observers_by_landmarks.values():
+            observers = observers.union(obs)
+
+        submap = SummaryMap()
+        observer_list, observer_index = set_to_list_and_index_map(observers)
+        submap.observers_position = self.observers_position[observer_list]
+        landmark_list, landmark_index = set_to_list_and_index_map(landmarks)
+        submap.landmarks_position = self.landmarks_position[landmark_list]
+
+        # collect the corresponding visibility edges
+        visibility_edges = []
+        visibility_edges_descriptor = []
+        for edge_index, edge in enumerate(self.visibility_edges):
+            if edge[0] in landmarks and edge[1] in observers:
+                visibility_edges += [(landmark_index[edge[0]], observer_index[edge[1]])]
+                visibility_edges_descriptor += [self.visibility_edges_descriptor[edge_index]]
+        submap.visibility_edges = np.array(visibility_edges)
+        submap.visibility_edges_descriptor = np.array(visibility_edges_descriptor)
+        return submap
+
+    def _generate_message(self):
+        descriptors_msg = summary_map_pb2.maplab__common_dot_eigen__pb2.MatrixXf()
+        descriptors_msg.data.extend([d for d in self.visibility_edges_descriptor.flatten()])
+        descriptors_msg.cols = self.visibility_edges_descriptor.shape[0]
+        descriptors_msg.rows = self.visibility_edges_descriptor.shape[1]
+
+        uncompressed_map_msg = summary_map_pb2.UncompressedLocalizationSummaryMap()
+        uncompressed_map_msg.descriptors.CopyFrom(descriptors_msg)
+        uncompressed_map_msg.G_observer_position.extend([p for p in self.observers_position.flatten()])
+        uncompressed_map_msg.observer_indices.extend([e[1] for e in self.visibility_edges])
+        uncompressed_map_msg.observation_to_landmark_index.extend([e[0] for e in self.visibility_edges])
+
+        self._message = summary_map_pb2.LocalizationSummaryMap()
+        self._message.G_landmark_position.extend([p for p in self.landmarks_position.flatten()])
+        self._message.uncompressed_map.CopyFrom(uncompressed_map_msg)
