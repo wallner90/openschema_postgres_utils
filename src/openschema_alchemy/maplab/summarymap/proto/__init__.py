@@ -90,13 +90,17 @@ class SummaryMap:
             landmarks.setdefault(edge[1], set()).add(edge[0])
         return landmarks
 
-    def submap_from_observers(self, observers: set):
+    def submap_from_observers(self, observers: set, landmark_visibility_radius=None):
         # collect all observed landmarks
         landmarks_by_all_observers = self.landmarks_by_observers()
-        landmarks_by_observers = {ob: landmarks_by_all_observers[ob] for ob in observers}
         landmarks = set()
-        for lms in landmarks_by_observers.values():
-            landmarks = landmarks.union(lms)
+        for observer in observers:
+            landmarks_in_radius = set()
+            for landmark in landmarks_by_all_observers[observer]:
+                dist = np.linalg.norm(self.landmarks_position[landmark] - self.observers_position[observer])
+                if dist < landmark_visibility_radius:
+                    landmarks_in_radius.add(landmark)
+            landmarks = landmarks.union(landmarks_in_radius)
 
         submap = SummaryMap()
         observer_list, observer_index = set_to_list_and_index_map(observers)
@@ -118,10 +122,9 @@ class SummaryMap:
     def submap_from_landmarks(self, landmarks: set):
         # collect all observers
         observers_by_all_landmarks = self.observers_by_landmark()
-        observers_by_landmarks = {lm: observers_by_all_landmarks[lm] for lm in landmarks}
         observers = set()
-        for obs in observers_by_landmarks.values():
-            observers = observers.union(obs)
+        for landmark in landmarks:
+            observers = observers.union(observers_by_all_landmarks[landmark])
 
         submap = SummaryMap()
         observer_list, observer_index = set_to_list_and_index_map(observers)
