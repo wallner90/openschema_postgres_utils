@@ -4,6 +4,8 @@ from datetime import datetime
 
 import json
 
+from pyclothoids import Clothoid
+
 from model import *
 
 json_file_path = Path(
@@ -36,8 +38,9 @@ def to_db(session, input_file, map_name):
         #
         id = 0
         keypoints = []
+        many_to_many_associations = []
         semantic_lanes = {}
-        landmarks = {}
+        landmarks = []
         semantic_lines = {}
         semantic_geometry = {}
         lanes = list(loaded_data["laneList"])
@@ -47,53 +50,87 @@ def to_db(session, input_file, map_name):
         semantic_lines_info = {}
         semantic_line_id = 0
         for lane in list(lanes):
+            semantic_line1 = SemanticLineString(type="line_string")
+            semantic_line2 = SemanticLineString(type="line_string")
+           
             print("lane is ", lane)
             goal_id_1 = lane["startNodeId"] - 1  # goal 1 is start Node!
             goal1 = goals[goal_id_1]
             goal_pos1 = goal1["pose"]
-            pos_x = goal_pos1["x"]
-            pos_y = goal_pos1["y"]
-            pos_yaw = goal_pos1["yaw"]
+            pos_x_1 = goal_pos1["x"]
+            pos_y_1 = goal_pos1["y"]
+            pos_yaw_1 = goal_pos1["yaw"]
             relatedStations = []
             for stationId in goal1["stationId"]:
                 for station in stations:
                     if station["id"] == stationId:
                         relatedStations.append(station)
 
-            landmarks[goal_id_1] = Landmark(position=f'POINTZ({pos_x} {pos_y} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw * (180 / pi)) * cos(0)} {0} {cos(pos_yaw * (180 / pi)) * cos(0)})',
+            lm_1 = Landmark(position=f'POINTZ({pos_x_1} {pos_y_1} {0})',
+                                            normal=f'POINTZ({sin(pos_yaw_1 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_1 * (180 / pi)) * cos(0)})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_1,
                                                         "goalProperty": goal1["goalProperty"]})
+            landmarks.append(lm_1)
             keypoints.append(SemanticKeypoint(
-                observation=semantic_observation, landmark=landmarks[goal_id_1]))
+                observation=semantic_observation, landmark=lm_1))
+            m2m_assoc1 = ManyLandmarkHasManySemanticGeometry(order_idx=0, landmark=lm_1)
+            m2m_assoc2 = ManyLandmarkHasManySemanticGeometry(order_idx=0, landmark=lm_1)
+            semantic_line1.landmarks.append(m2m_assoc1)
+            semantic_line2.landmarks.append(m2m_assoc2)
+            many_to_many_associations.append(m2m_assoc1)
+            many_to_many_associations.append(m2m_assoc2)
 
             goal_id_2 = lane["endNodeId"] - 1  # goal 2 is end Node!
             goal2 = goals[goal_id_2]
             goal_pos2 = goal2["pose"]
-            pos_x = goal_pos2["x"]
-            pos_y = goal_pos2["y"]
-            pos_yaw = goal_pos2["yaw"]
-            print(pos_x, pos_y, pos_yaw)
+            pos_x_2 = goal_pos2["x"]
+            pos_y_2 = goal_pos2["y"]
+            pos_yaw_2 = goal_pos2["yaw"]
+            print(pos_x_2, pos_y_2, pos_yaw_2)
             relatedStations = []
+
+            # sample virtual landmarks inbetween to generate clothoid
+            clothoid = Clothoid.G1Hermite(x0=pos_x_1, y0=pos_y_1, t0=pos_yaw_1, x1=pos_x_2, y1=pos_x_2, t1=pos_yaw_2)
+            samples_x, samples_y = clothoid.SampleXY(50)
+            idx = 1
+            for sample_x,sample_y in zip(samples_x, samples_y):
+                lm = Landmark(position=f'POINTZ({sample_x} {sample_y} {0})',
+                                descriptor={"sampled_clothoid": True})
+                landmarks.append(lm)
+                keypoints.append(SemanticKeypoint(
+                                observation=semantic_observation, landmark=lm))
+                m2m_assoc1 = ManyLandmarkHasManySemanticGeometry(order_idx=idx, landmark=lm)
+                m2m_assoc2 = ManyLandmarkHasManySemanticGeometry(order_idx=idx, landmark=lm)
+                semantic_line1.landmarks.append(m2m_assoc1)
+                semantic_line2.landmarks.append(m2m_assoc2)
+                many_to_many_associations.append(m2m_assoc1)
+                many_to_many_associations.append(m2m_assoc2)
+                idx = idx + 1
+
             for stationId in goal2["stationId"]:
                 for station in stations:
                     if station["id"] == stationId:
                         relatedStations.append(station)
 
-            landmarks[goal_id_2] = Landmark(position=f'POINTZ({pos_x} {pos_y} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw * (180 / pi)) * cos(0)} {0} {cos(pos_yaw * (180 / pi)) * cos(0)})',
+            lm_2 = Landmark(position=f'POINTZ({pos_x_2} {pos_y_2} {0})',
+                                            normal=f'POINTZ({sin(pos_yaw_2 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_2 * (180 / pi)) * cos(0)})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_2,
                                                         "goalProperty": goal2["goalProperty"]})
+            landmarks.append(lm_2)     
             keypoints.append(SemanticKeypoint(
-                observation=semantic_observation, landmark=landmarks[goal_id_2]))
+                observation=semantic_observation, landmark=lm_2))
+            m2m_assoc1 = ManyLandmarkHasManySemanticGeometry(order_idx=idx, landmark=lm_2)
+            m2m_assoc2 = ManyLandmarkHasManySemanticGeometry(order_idx=idx, landmark=lm_2)
+            semantic_line1.landmarks.append(m2m_assoc1)
+            semantic_line2.landmarks.append(m2m_assoc2)
+            many_to_many_associations.append(m2m_assoc1)
+            many_to_many_associations.append(m2m_assoc2)
 
             # line String IS a geometry Objectu
-            semantic_line1 = SemanticLineString(type="line_string")
-            semantic_line1.landmarks.append(landmarks[goal_id_1])
-            semantic_line1.landmarks.append(landmarks[goal_id_2])
-            semantic_line2 = SemanticLineString(type="line_string")
-            semantic_line2.landmarks.append(landmarks[goal_id_1])
-            semantic_line2.landmarks.append(landmarks[goal_id_2])
+            # semantic_line1.landmarks.append(landmarks)
+            # semantic_line1.landmarks.extend(landmarks)
+            # semantic_line2.landmarks.append(landmarks)
+            # semantic_line2.landmarks.extend(landmarks)
             forwardDriving = lane["virtualLane"]["forwardDirection"]["driveForwardOriented"]
             forwardBackwardDriving = lane["virtualLane"]["forwardDirection"]["driveBackwardOriented"]
             backwardDriving = lane["virtualLane"]["backwardDirection"]["driveForwardOriented"]
@@ -109,9 +146,10 @@ def to_db(session, input_file, map_name):
             semantic_line_id += 1
             id += 1
 
-        session.add_all(keypoints +
-                        [semantic_observation, pg, new_map] +
-                        list(landmarks.values()) +
+        session.add_all([semantic_observation, pg, new_map] +
+                        keypoints + 
+                        many_to_many_associations +
+                        landmarks +
                         list(semantic_lines.values()) +
                         list(semantic_geometry.values()))
         session.commit()

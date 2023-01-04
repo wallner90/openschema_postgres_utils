@@ -461,18 +461,32 @@ class Landmark(Base):
     descriptor = Column(
         JSON, comment="Landmark specific information, e.g., semantic information (is a pallet, is on a house, is agent,, etc).")
 
+    semantic_geometries = relationship(
+        "ManyLandmarkHasManySemanticGeometry", back_populates="landmark")
 
-landmark_to_semantic_geometry_association_table = Table(
-    "many_landmarks_has_many_semantic_geometries",
-    Base.metadata,
-    Column("landmark_id", ForeignKey("landmark.id")),
-    Column("semantic_geometry_id", ForeignKey("semantic_geometry.id")),
-    Column("order_idx", Integer),
-    PrimaryKeyConstraint("landmark_id", "semantic_geometry_id",
-                         name="many_landmarks_has_many_semantic_geometries_pkey"),
-    CheckConstraint(
-        "order_idx >= 0", name="many_landmarks_has_many_semantic_geometries_order_idx_positive")
-)
+
+class ManyLandmarkHasManySemanticGeometry(Base):
+    __tablename__ = "many_landmarks_has_many_semantic_geometries"
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                server_default=text("uuid_generate_v4()"))
+    landmark_id = Column(ForeignKey("landmark.id", primary_key=True))
+    semantic_geometry_id = Column(ForeignKey("semantic_geometry.id"), primary_key=True)
+    order_idx = Column(Integer)
+    landmark = relationship("Landmark", back_populates="semantic_geometries")
+    semantic_geometry = relationship("SemanticGeometry", back_populates="landmarks")
+
+
+# landmark_to_semantic_geometry_association_table = Table(
+#     "many_landmarks_has_many_semantic_geometries",
+#     Base.metadata,
+#     Column("landmark_id", ForeignKey("landmark.id")),
+#     Column("semantic_geometry_id", ForeignKey("semantic_geometry.id")),
+#     Column("order_idx", Integer),
+#     PrimaryKeyConstraint("landmark_id", "semantic_geometry_id",
+#                          name="many_landmarks_has_many_semantic_geometries_pkey"),
+#     CheckConstraint(
+#         "order_idx >= 0", name="many_landmarks_has_many_semantic_geometries_order_idx_positive")
+# )
 
 class SemanticGeometryType(enum.Enum):
     Geometry = "geometry"
@@ -492,7 +506,7 @@ class SemanticGeometry(Base):
     description = Column(
         JSON, comment="Depending on type, description of geometry (e.g., linestring, lane, area, ...)")
     landmarks = relationship(
-        "Landmark", secondary=landmark_to_semantic_geometry_association_table)
+        "ManyLandmarkHasManySemanticGeometry", back_populates="semantic_geometry")
 
     __mapper_args__ = {
         "polymorphic_identity": SemanticGeometryType.Geometry,
