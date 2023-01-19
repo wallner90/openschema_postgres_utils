@@ -90,7 +90,7 @@ class SummaryMap:
             landmarks.setdefault(edge[1], set()).add(edge[0])
         return landmarks
 
-    def submap_from_observers(self, observers: set, landmark_visibility_radius=None):
+    def submap_from_observers(self, observers: set, landmark_visibility_range=None):
         # collect all observed landmarks
         landmarks_by_all_observers = self.landmarks_by_observers()
         landmarks = set()
@@ -98,7 +98,7 @@ class SummaryMap:
             landmarks_in_radius = set()
             for landmark in landmarks_by_all_observers[observer]:
                 dist = np.linalg.norm(self.landmarks_position[landmark] - self.observers_position[observer])
-                if dist < landmark_visibility_radius:
+                if landmark_visibility_range[0] < dist < landmark_visibility_range[1]:
                     landmarks_in_radius.add(landmark)
             landmarks = landmarks.union(landmarks_in_radius)
 
