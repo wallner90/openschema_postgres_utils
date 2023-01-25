@@ -1,6 +1,7 @@
 import gzip
 import os
 import yaml
+import numpy as np
 from glob import glob
 from google.protobuf import text_format
 
@@ -15,6 +16,16 @@ def id_from_tuple(tuple_id):
     aslam_id = vi_map_pb2.aslam_dot_common_dot_id__pb2.Id()
     aslam_id.uint.extend(tuple_id)
     return aslam_id
+
+
+def hex_string_from_tuple(tuple_id):
+    id_uint64_array = np.array(tuple_id, dtype=np.uint64)
+    id_char_array = np.frombuffer(id_uint64_array.data, dtype=np.uint8)
+    hex_string = ""
+    for c in id_char_array:
+        hex_string += hex(c >> 4)[2]
+        hex_string += hex(c & 0xf)[2]
+    return hex_string
 
 
 def merge_vimap_file_to_message(message: vi_map_pb2.VIMap, file_name: str, compressed: bool) -> vi_map_pb2.VIMap:
