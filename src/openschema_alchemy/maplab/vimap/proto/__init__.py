@@ -28,6 +28,13 @@ def hex_string_from_tuple(tuple_id):
     return hex_string
 
 
+def tuple_from_hex_string(hex_string):
+    assert len(hex_string) == 32, "Hash string must have length 32"
+    id_char_array = np.array([int(hex_string[2*i:2*(i+1)], 16) for i in range(16)], dtype=np.uint8)
+    id_uint64_array = np.frombuffer(id_char_array.data, dtype=np.uint64)
+    return id_uint64_array[0], id_uint64_array[1]
+
+
 def merge_vimap_file_to_message(message: vi_map_pb2.VIMap, file_name: str, compressed: bool) -> vi_map_pb2.VIMap:
     with open(file_name, "rb") as file:
         data = file.read()
