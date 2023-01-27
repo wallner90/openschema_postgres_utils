@@ -2,7 +2,6 @@ import gzip
 import os
 import yaml
 import numpy as np
-from glob import glob
 from google.protobuf import text_format
 
 from maplab.vimap.proto import vi_map_pb2
@@ -35,14 +34,6 @@ def tuple_from_hex_string(hex_string):
     return id_uint64_array[0], id_uint64_array[1]
 
 
-def merge_vimap_file_to_message(message: vi_map_pb2.VIMap, file_name: str, compressed: bool) -> vi_map_pb2.VIMap:
-    with open(file_name, "rb") as file:
-        data = file.read()
-    if compressed:
-        data = gzip.decompress(data)
-    message.MergeFromString(data)
-
-
 def create_file_type(type_string: str, path=None):
     type_string_to_id = {"missions": 0, "vertices": 1, "edges": 2, "landmark_index": 3}
     if path is None:
@@ -54,24 +45,39 @@ def create_file_type(type_string: str, path=None):
 
 
 class VIMap:
-    def __init__(self, map_dir: str, compressed: bool = True):
+    def __init__(self, map_dir: str = None, compressed: bool = True):
+        self.message = vi_map_pb2.VIMap()
+        self.sensors = None
+        self.metadata = None
+        self.resource_info = None
+        self.resources = None
+        self.vi_map_metadata = None
+        if map_dir is not None:
+            self.load_from(map_dir, compressed)
+
+    def load_from(self, map_dir: str, compressed: bool = True):
         assert "vi_map" in os.listdir(map_dir), f"Cannot find 'vi_map' directory in path {map_dir}"
         vimap_dir = map_dir + "/vi_map"
 
-        print("VIMap: loading data")
-        self.message = vi_map_pb2.VIMap()
-        merge_vimap_file_to_message(self.message, vimap_dir + "/missions", compressed)
-        merge_vimap_file_to_message(self.message, vimap_dir + "/landmark_index", compressed)
-        for file in glob(vimap_dir + "/edges*") + glob(vimap_dir + "/vertices*"):
-            merge_vimap_file_to_message(self.message, file, compressed)
-
-        print("VIMap: loading sensors")
-        with open(vimap_dir + "/sensors.yaml") as file:
-            self.sensors = yaml.safe_load(file.read())
-
         print("VIMap: loading meta data")
         with open(vimap_dir + "/vi_map_metadata", "r") as file:
-            self.meta_data = text_format.Parse(file.read(), vi_map_pb2.VIMapMetadata())
+            self.vi_map_metadata = text_format.Parse(file.read(), vi_map_pb2.VIMapMetadata())
+
+        print("VIMap: loading data")
+        self.message = vi_map_pb2.VIMap()
+        for file in self.vi_map_metadata.files:
+            self.merge_file_to_message(f"{vimap_dir}/{file.path}", compressed)
+
+        print("VIMap: loading sensors")
+        with open(vimap_dir + "/sensors.yaml", "r") as file:
+            self.sensors = yaml.safe_load(file.read())
+
+    def merge_file_to_message(self, file_name: str, compressed: bool):
+        with open(file_name, "rb") as file:
+            data = file.read()
+        if compressed:
+            data = gzip.decompress(data)
+        self.message.MergeFromString(data)
 
     def save_to(self, map_dir: str, compressed: bool):
         vimap_dir = map_dir + "/vi_map"
