@@ -51,7 +51,7 @@ class VIMap:
         self.metadata = None
         self.resource_info = None
         self.resources = None
-        self.vi_map_metadata = None
+        self.vi_map_metadata = vi_map_pb2.VIMapMetadata()
         if map_dir is not None:
             self.load_from(map_dir, compressed)
 
