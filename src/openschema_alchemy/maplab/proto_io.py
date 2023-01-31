@@ -3,8 +3,8 @@ import numpy as np
 from datetime import datetime
 from scipy.spatial.transform import Rotation
 from tqdm.asyncio import tqdm
-
-from maplab.vimap.proto import VIMap, tuple_from_id, hex_string_from_tuple
+from uuid import UUID
+from maplab.vimap.proto import VIMap, uuid_from_aslam_id
 from model import Landmark, Map, PoseGraph, SensorRig, Camera, IMU, Pose, CameraObservation, CameraKeypoint
 
 
@@ -16,11 +16,15 @@ def to_db(session, input_dir, map_name):
     dp_map = Map(name=map_name, description={'type': 'vimap'}, created_at=time, updated_at=time)
 
     # TODO: multiple missions, now only the first mission is used
-    mission, mission_id = vimap.message.missions[0], tuple_from_id(vimap.message.mission_ids[0])
+    mission, mission_id = vimap.message.missions[0], uuid_from_aslam_id(vimap.message.mission_ids[0])
     print(f"Collect data for mission (id: {mission_id})")
-    db_posegraph = PoseGraph(name='vimap graph', description={'mission id': json.dumps(mission_id)}, map=dp_map)
+    db_posegraph = PoseGraph(id=mission_id, name='vimap graph',
+                             description={'root_vertex_id': uuid_from_aslam_id(mission.root_vertex_id).hex}, map=dp_map)
     # collect sensors
-    db_sensor_rig = SensorRig(name='sensor rig', description={'config': json.dumps(vimap.sensors)},
+    # Note: we allow exactly one NCAMERA per sensor rig.
+    # Therefore, the sensor rig id is set to the NCAMERA id.
+    db_sensor_rig = SensorRig(id=uuid_from_aslam_id(mission.ncamera_id),
+                              name='sensor rig', description={'config': json.dumps(vimap.sensors)},
                               posegraph=db_posegraph)
     db_cameras = []
     db_imus = []
@@ -28,28 +32,32 @@ def to_db(session, input_dir, map_name):
         sensor_type = sensor['sensor_type']
         sensor_id = sensor['id']
         if sensor_type == 'NCAMERA':
-            if sensor_id == hex_string_from_tuple(tuple_from_id(mission.ncamera_id)):
-                print('Found n-camera')
+            if sensor_id == db_sensor_rig.id.hex:
+                print(f"Found {len(sensor['cameras'])}-camera")
                 for s in sensor['cameras']:
-                    db_camera = s['camera']
+                    camera = s['camera']
                     db_cameras.append(
-                        Camera(name=db_camera['topic'], description={'id': db_camera['id']}, sensor_rig=db_sensor_rig))
+                        Camera(id=UUID(hex=camera['id']), name=camera['topic'], description={'ncamera id': sensor_id},
+                               sensor_rig=db_sensor_rig))
         if sensor_type == 'IMU':
-            if sensor_id == hex_string_from_tuple(tuple_from_id(mission.imu_id)):
+            if sensor_id == uuid_from_aslam_id(mission.imu_id).hex:
                 print('Found imu')
-                db_imus.append(IMU(name=sensor['topic'], description={'id': sensor['id']}, sensor_rig=db_sensor_rig))
+                db_imus.append(IMU(id=UUID(hex=sensor_id), name=sensor['topic'], description={}, sensor_rig=db_sensor_rig))
 
-    # collect poses and landmarks
+    # collect poses and landmarks of the mission
     vertices = vimap.vertices()
     db_poses = {}
     db_landmarks = {}
     landmark_quality_filter = [0, 1, 2]  # 0 = unknown, 1 = bad, 2 = good
     for pose_id, pose in vertices.items():
+        if mission_id != uuid_from_aslam_id(pose.mission_id):
+            continue
         pose_transform = np.array(pose.T_M_I)
         pose_quaternion = pose_transform[0:4]
         pose_position = pose_transform[4:7]
         pose_rotvec = Rotation.from_quat(pose_quaternion).as_rotvec()
-        db_pose = Pose(position=f'POINTZ({pose_position[0]} {pose_position[1]} {pose_position[2]})',
+        db_pose = Pose(id=pose_id,
+                       position=f'POINTZ({pose_position[0]} {pose_position[1]} {pose_position[2]})',
                        rotation_vector=f'POINTZ({pose_rotvec[0]} {pose_rotvec[1]} {pose_rotvec[2]})',
                        posegraph=db_posegraph)
         db_poses[pose_id] = db_pose
@@ -60,32 +68,42 @@ def to_db(session, input_dir, map_name):
                 # TODO: apply transform of mission frame
                 local_pos = np.array(landmark.position)
                 global_pos = Rotation.from_quat(pose_quaternion).apply(local_pos) + pose_position
-                db_landmarks[tuple_from_id(landmark.id)] = \
-                    Landmark(position=f'POINTZ({global_pos[0]} {global_pos[1]} {global_pos[2]})')
+                landmark_id = uuid_from_aslam_id(landmark.id)
+                db_landmarks[landmark_id] = \
+                    Landmark(id=landmark_id,
+                             position=f'POINTZ({global_pos[0]} {global_pos[1]} {global_pos[2]})',
+                             uncertainty={'covariance': json.dumps([x for x in landmark.covariance])},
+                             descriptor={'quality': landmark.quality})
 
     # collect camera keypoints for keyframes of the mission
     db_camera_keypoints = []
     print("Loading camera keypoints: ")
     for pose_id, pose in tqdm(vertices.items(), total=len(vertices)):
-        if mission_id != tuple_from_id(pose.mission_id):
+        if mission_id != uuid_from_aslam_id(pose.mission_id):
             continue
         frames = pose.n_visual_frame.frames
-        assert len(frames) == len(db_cameras), f"Error: Assumed lengths are equal, but got {len(frames)} != {len(db_cameras)}."
+        assert len(frames) == len(db_cameras), \
+            f"Error: Assumed lengths are equal, but got {len(frames)} != {len(db_cameras)}."
         for db_camera, frame in zip(db_cameras, frames):
             # TODO: conversion looses precision (from nano seconds to micro seconds)!
             time = datetime.fromtimestamp(float(frame.timestamp) / 10 ** 9)
-            db_camera_observation = CameraObservation(pose=db_poses[pose_id], sensor=db_camera, camera=db_camera,
-                                                      algorithm="rovisoli", created_at=time, updated_at=time)
+            db_camera_observation = CameraObservation(id=uuid_from_aslam_id(frame.id),
+                                                      pose=db_poses[pose_id], sensor=db_camera, camera=db_camera,
+                                                      algorithm="maplab feature extractor",
+                                                      algorithm_settings={'descriptor_scales': 20,
+                                                                          'keypoint_descriptor_size': 48,
+                                                                          'keypoint_measurement_sigmas': 0.8},
+                                                      created_at=time, updated_at=time)
             keypoint_num = len(frame.keypoint_measurement_sigmas)
             keypoint_positions = np.array(frame.keypoint_measurements).reshape(keypoint_num, 2)
             keypoint_descriptors = np.frombuffer(frame.keypoint_descriptors, dtype=np.uint8) \
                 .reshape(keypoint_num, frame.keypoint_descriptor_size)
             for position, descriptor, lm_id in zip(keypoint_positions, keypoint_descriptors, frame.landmark_ids):
-                if tuple_from_id(lm_id) in db_landmarks.keys():
+                if uuid_from_aslam_id(lm_id) in db_landmarks.keys():
                     db_camera_keypoints.append(CameraKeypoint(point=f"POINT({position[0]} {position[1]})",
                                                               descriptor=json.dumps(descriptor.tolist()),
                                                               observation=db_camera_observation,
-                                                              landmark=db_landmarks[tuple_from_id(lm_id)]))
+                                                              landmark=db_landmarks[uuid_from_aslam_id(lm_id)]))
 
     print("Add map structure to database.")
     session.add_all(db_camera_keypoints)
