@@ -8,6 +8,13 @@ from uuid import UUID
 from maplab.vimap.proto import vi_map_pb2
 
 
+def get_edge_type(edge_dict):
+    edge_types = [t for t in edge_dict.keys()]
+    assert len(edge_types), "Assumed exactly one edge type."
+    edge_type = edge_types[0]
+    return edge_type
+
+
 def uuid_from_aslam_id(aslam_id: vi_map_pb2.aslam_dot_common_dot_id__pb2.Id) -> UUID:
     return UUID(bytes=np.array(aslam_id.uint, dtype=np.uint64).tobytes())
 

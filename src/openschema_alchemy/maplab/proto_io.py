@@ -4,8 +4,9 @@ from datetime import datetime
 from scipy.spatial.transform import Rotation
 from tqdm.asyncio import tqdm
 from uuid import UUID
-from maplab.vimap.proto import VIMap, uuid_from_aslam_id
-from model import Landmark, Map, PoseGraph, SensorRig, Camera, IMU, Pose, CameraObservation, CameraKeypoint
+from maplab.vimap.proto import VIMap, uuid_from_aslam_id, vi_map_pb2, get_edge_type
+from model import Landmark, Map, PoseGraph, SensorRig, Camera, IMU, Pose, CameraObservation, CameraKeypoint, BetweenEdge
+from google.protobuf.json_format import MessageToDict, ParseDict
 
 
 def to_db(session, input_dir, map_name):
@@ -42,32 +43,36 @@ def to_db(session, input_dir, map_name):
         if sensor_type == 'IMU':
             if sensor_id == uuid_from_aslam_id(mission.imu_id).hex:
                 print('Found imu')
-                db_imus.append(IMU(id=UUID(hex=sensor_id), name=sensor['topic'], description={}, sensor_rig=db_sensor_rig))
+                db_imus.append(
+                    IMU(id=UUID(hex=sensor_id), name=sensor['topic'], description={}, sensor_rig=db_sensor_rig))
 
     # collect poses and landmarks of the mission
     vertices = vimap.vertices()
     db_poses = {}
+    edge_ids = set()
     db_landmarks = {}
     landmark_quality_filter = [0, 1, 2]  # 0 = unknown, 1 = bad, 2 = good
-    for pose_id, pose in vertices.items():
-        if mission_id != uuid_from_aslam_id(pose.mission_id):
+    print("Loading poses and landmarks.")
+    for vertex_id, vertex in vertices.items():
+        if mission_id != uuid_from_aslam_id(vertex.mission_id):
             continue
-        pose_transform = np.array(pose.T_M_I)
-        pose_quaternion = pose_transform[0:4]
-        pose_position = pose_transform[4:7]
-        pose_rotvec = Rotation.from_quat(pose_quaternion).as_rotvec()
-        db_pose = Pose(id=pose_id,
-                       position=f'POINTZ({pose_position[0]} {pose_position[1]} {pose_position[2]})',
+        vertex_transform = np.array(vertex.T_M_I)
+        vertex_quaternion = vertex_transform[0:4]
+        vertex_position = vertex_transform[4:7]
+        pose_rotvec = Rotation.from_quat(vertex_quaternion).as_rotvec()
+        db_pose = Pose(id=vertex_id,
+                       position=f'POINTZ({vertex_position[0]} {vertex_position[1]} {vertex_position[2]})',
                        rotation_vector=f'POINTZ({pose_rotvec[0]} {pose_rotvec[1]} {pose_rotvec[2]})',
                        posegraph=db_posegraph)
-        db_poses[pose_id] = db_pose
-        landmarks = pose.landmark_store.landmarks
+        db_poses[vertex_id] = db_pose
+        # collect landmarks
+        landmarks = vertex.landmark_store.landmarks
         for landmark in landmarks:
             if landmark.quality in landmark_quality_filter:
                 # we need to transform the landmark position from local to global coordinate frame
                 # TODO: apply transform of mission frame
                 local_pos = np.array(landmark.position)
-                global_pos = Rotation.from_quat(pose_quaternion).apply(local_pos) + pose_position
+                global_pos = Rotation.from_quat(vertex_quaternion).apply(local_pos) + vertex_position
                 landmark_id = uuid_from_aslam_id(landmark.id)
                 db_landmarks[landmark_id] = \
                     Landmark(id=landmark_id,
@@ -78,17 +83,19 @@ def to_db(session, input_dir, map_name):
     # collect camera keypoints for keyframes of the mission
     db_camera_keypoints = []
     print("Loading camera keypoints: ")
-    for pose_id, pose in tqdm(vertices.items(), total=len(vertices)):
-        if mission_id != uuid_from_aslam_id(pose.mission_id):
+    for vertex_id, vertex in tqdm(vertices.items(), total=len(vertices)):
+        if mission_id != uuid_from_aslam_id(vertex.mission_id):
             continue
-        frames = pose.n_visual_frame.frames
+        frames = vertex.n_visual_frame.frames
         assert len(frames) == len(db_cameras), \
             f"Error: Assumed lengths are equal, but got {len(frames)} != {len(db_cameras)}."
         for db_camera, frame in zip(db_cameras, frames):
+            assert frame.is_valid, "Assumed that frame is valid, got invalid frame."
             # TODO: conversion looses precision (from nano seconds to micro seconds)!
             time = datetime.fromtimestamp(float(frame.timestamp) / 10 ** 9)
-            db_camera_observation = CameraObservation(id=uuid_from_aslam_id(frame.id),
-                                                      pose=db_poses[pose_id], sensor=db_camera, camera=db_camera,
+            observation_id = uuid_from_aslam_id(frame.id)
+            db_camera_observation = CameraObservation(id=observation_id,
+                                                      pose=db_poses[vertex_id], sensor=db_camera, camera=db_camera,
                                                       algorithm="maplab feature extractor",
                                                       algorithm_settings={'descriptor_scales': 20,
                                                                           'keypoint_descriptor_size': 48,
@@ -98,16 +105,47 @@ def to_db(session, input_dir, map_name):
             keypoint_positions = np.array(frame.keypoint_measurements).reshape(keypoint_num, 2)
             keypoint_descriptors = np.frombuffer(frame.keypoint_descriptors, dtype=np.uint8) \
                 .reshape(keypoint_num, frame.keypoint_descriptor_size)
+            assert len(keypoint_positions) == len(keypoint_descriptors), \
+                "Assumed that number of keypoints is equal to number of descriptors."
+            assert len(keypoint_positions) == len(frame.landmark_ids), \
+                "Assumed that number of keypoints is equal to number of landmark ids"
             for position, descriptor, lm_id in zip(keypoint_positions, keypoint_descriptors, frame.landmark_ids):
                 if uuid_from_aslam_id(lm_id) in db_landmarks.keys():
+                    # Note keypoints with invalid landmark id are discarded automatically
                     db_camera_keypoints.append(CameraKeypoint(point=f"POINT({position[0]} {position[1]})",
                                                               descriptor=json.dumps(descriptor.tolist()),
                                                               observation=db_camera_observation,
                                                               landmark=db_landmarks[uuid_from_aslam_id(lm_id)]))
-
-    print("Add map structure to database.")
+    print("Commit camera keypoints to database.")
     session.add_all(db_camera_keypoints)
-    print("Commit map structure to database.")
     session.commit()
 
-    # TODO: add imu, loop closures, co-visibilities of observations as edges in db - currently not exported to csv!
+    # collect (between) edges of the mission
+    db_edges = []
+    edges = vimap.edges()
+    print("Loading edges: ")
+    for vertex_id, vertex in vertices.items():
+        if mission_id != uuid_from_aslam_id(vertex.mission_id):
+            continue
+        assert len(frames) == len(db_cameras), \
+            f"Error: Assumed lengths are equal, but got {len(frames)} != {len(db_cameras)}."
+        # collect edges for last frame, since observation ids are per frame basis,
+        # but we only have one edge id between poses in the maplab vi-map
+        outgoing_edge_ids = [uuid_from_aslam_id(edge_id) for edge_id in vertex.outgoing]
+        for edge_id in outgoing_edge_ids:
+            edge_dict = MessageToDict(edges[edge_id])
+            edge_type = get_edge_type(edge_dict)
+            vertex_from_id = uuid_from_aslam_id(ParseDict(edge_dict[edge_type].pop('from'),
+                                                          vi_map_pb2.aslam_dot_common_dot_id__pb2.Id()))
+            vertex_to_id = uuid_from_aslam_id(ParseDict(edge_dict[edge_type].pop('to'),
+                                                    vi_map_pb2.aslam_dot_common_dot_id__pb2.Id()))
+            assert vertex_from_id == vertex_id, "Assumed that vertex_from_id of outgoing edge is vertex_id"
+            from_observation_id = uuid_from_aslam_id(vertex.n_visual_frame.frames[-1].id)
+            to_observation_id = uuid_from_aslam_id(vertices[vertex_to_id].n_visual_frame.frames[-1].id)
+            db_edges += [BetweenEdge(id=edge_id, edge_info=edge_dict,
+                                     from_observation_id=from_observation_id, to_observation_id=to_observation_id)]
+    print("Commit edges to database.")
+    session.add_all(db_edges)
+    session.commit()
+
+# TODO: to_file
