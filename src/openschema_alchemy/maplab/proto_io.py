@@ -21,8 +21,7 @@ def to_db(session, input_dir, map_name):
     # TODO: multiple missions, now only the first mission is used
     mission, mission_id = vimap.message.missions[0], uuid_from_aslam_id(vimap.message.mission_ids[0])
     print(f"Collect data for mission (id: {mission_id})")
-    db_posegraph = PoseGraph(id=mission_id, name='vimap graph',
-                             description={'root_vertex_id': uuid_from_aslam_id(mission.root_vertex_id).hex}, map=dp_map)
+    db_posegraph = PoseGraph(id=mission_id, name='vimap graph', description={}, map=dp_map)
     # collect sensors
     # Note: we allow exactly one NCAMERA per sensor rig.
     # Therefore, the sensor rig id is set to the NCAMERA id.
@@ -129,6 +128,7 @@ def to_db(session, input_dir, map_name):
     for vertex_id, vertex in vertices.items():
         if mission_id != uuid_from_aslam_id(vertex.mission_id):
             continue
+        frames = vertex.n_visual_frame.frames
         assert len(frames) == len(db_cameras), \
             f"Error: Assumed lengths are equal, but got {len(frames)} != {len(db_cameras)}."
         # collect edges for last frame, since observation ids are per frame basis,
@@ -359,6 +359,8 @@ def to_file(session, output_dir, map_name):
             starting_vertex_ids += [aslam_id_from_uuid(db_pose.id)]
         for db_edge in db_edges:
             edge = edges[db_edge.id]
+            edge_dict = db_edge.edge_info
+            edge_type = get_edge_type(edge_dict)
             edge.__getattribute__(edge_type).__getattribute__("to").CopyFrom(aslam_id_from_uuid(db_pose.id))
 
     if len(starting_vertex_ids) == 0:
