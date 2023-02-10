@@ -2,7 +2,7 @@ import gzip
 import numpy as np
 import os
 
-from maplab.summarymap.proto import summary_map_pb2
+from maplab.protobuf import summary_map_pb2
 
 
 def set_to_list_and_index_map(set_: set):

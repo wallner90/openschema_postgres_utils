@@ -12,9 +12,9 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from maplab.vimap.proto.aslam.common import id_pb2 as aslam_dot_common_dot_id__pb2
-from maplab.vimap.proto.aslam_serialization import visual_frame_pb2 as aslam__serialization_dot_visual__frame__pb2
-from maplab.vimap.proto.vi_map import sensor_resources_pb2 as vi__map_dot_sensor__resources__pb2
+from maplab.protobuf.aslam.common import id_pb2 as aslam_dot_common_dot_id__pb2
+from maplab.protobuf.aslam_serialization import visual_frame_pb2 as aslam__serialization_dot_visual__frame__pb2
+from maplab.protobuf.vi_map import sensor_resources_pb2 as vi__map_dot_sensor__resources__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

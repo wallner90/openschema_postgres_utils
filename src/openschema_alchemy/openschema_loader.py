@@ -8,7 +8,7 @@ import model
 import openVSLAM_io
 import lane_map_json_io
 import lidar_io
-from maplab import proto_io as maplab_io
+from maplab import db_io as maplab_io
 
 
 def main():

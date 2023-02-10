@@ -12,8 +12,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from maplab.vimap.proto.aslam.common import id_pb2 as aslam_dot_common_dot_id__pb2
-from maplab.vimap.proto.maplab_common import eigen_pb2 as maplab__common_dot_eigen__pb2
+from maplab.protobuf.aslam.common import id_pb2 as aslam_dot_common_dot_id__pb2
+from maplab.protobuf.maplab_common import eigen_pb2 as maplab__common_dot_eigen__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

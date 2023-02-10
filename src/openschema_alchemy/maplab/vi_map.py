@@ -2,10 +2,10 @@ import gzip
 import os
 import yaml
 import numpy as np
-from google.protobuf import text_format
-from uuid import UUID
 
-from maplab.vimap.proto import vi_map_pb2
+from uuid import UUID
+from google.protobuf import text_format
+from maplab.protobuf import vi_map_pb2
 
 
 def get_edge_type(edge_dict):

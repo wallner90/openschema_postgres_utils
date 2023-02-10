@@ -1,11 +1,12 @@
 import json
 import numpy as np
+
 from datetime import datetime
 from scipy.spatial.transform import Rotation
 from sqlalchemy import select, func
 from tqdm.asyncio import tqdm
 from uuid import UUID, uuid4
-from maplab.vimap.proto import VIMap, uuid_from_aslam_id, vi_map_pb2, get_edge_type, aslam_id_from_uuid
+from maplab.vi_map import VIMap, uuid_from_aslam_id, aslam_id_from_uuid, get_edge_type, vi_map_pb2
 from model import Landmark, Map, PoseGraph, SensorRig, Camera, IMU, Pose, CameraObservation, CameraKeypoint, \
     BetweenEdge, Observation, ObservationType
 from google.protobuf.json_format import MessageToDict, ParseDict
