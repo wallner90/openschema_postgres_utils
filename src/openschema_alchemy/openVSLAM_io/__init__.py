@@ -251,10 +251,10 @@ def to_file(session, output_file, map_name):
                                 'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
                                 'rot_cw': utils.euler_to_quaternion(
                                     roll=session.execute(
-                                        func.ST_X(observation.pose.normal)).scalar(),
+                                        func.ST_X(observation.pose.rotation_vector)).scalar(),
                                     pitch=session.execute(
-                                        func.ST_Y(observation.pose.normal)).scalar(),
-                                    yaw=session.execute(func.ST_Z(observation.pose.normal)).scalar()),
+                                        func.ST_Y(observation.pose.rotation_vector)).scalar(),
+                                    yaw=session.execute(func.ST_Z(observation.pose.rotation_vector)).scalar()),
                                 'scale_factor': observation.algorithm_settings['openVSLAM']['scale_factor'],
                                 'span_children': span_children,
                                 'span_parent': -1 if len(span_parent) == 0 else span_parent[0],

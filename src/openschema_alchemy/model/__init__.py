@@ -139,9 +139,8 @@ class PoseGraph(Base):
     description = Column(JSON)
     map_id = Column(UUID(as_uuid=True), ForeignKey("map.id"))
 
-    root_pose = relationship("Pose",
-                    primaryjoin="and_(PoseGraph.id==Pose.posegraph_id, "
-                        "Pose.parent_pose_id==null())", viewonly=True)
+    root_pose = relationship("Pose", primaryjoin="and_(PoseGraph.id==Pose.posegraph_id, "
+                                                 "Pose.parent_pose_id==null())", viewonly=True)
     poses = relationship("Pose", backref="posegraph")
     sensor_rig = relationship("SensorRig", backref="posegraph")
 
@@ -152,15 +151,14 @@ class Pose(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"),
-                      comment="Absolute (map) position of a pose (with orientation as unit normal vector).")
-    normal = Column(Geometry("POINTZ"),
-                           comment="Absolute orientation as normal vector in the map frame (at position).")
+                      comment="Absolute (map) position of a pose.")
+    rotation_vector = Column(Geometry("POINTZ"),
+                             comment="Absolute orientation as rotation vector in the map frame.")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
     uncertainty = Column(JSON,
                          comment="Uncertainty parameters for model (e.g., covariance for gaussian).")
-    parent_pose_id = Column(
-        UUID(as_uuid=True), ForeignKey("pose.id"))
+    parent_pose_id = Column(UUID(as_uuid=True), ForeignKey("pose.id"))
     posegraph_id = Column(UUID(as_uuid=True), ForeignKey("posegraph.id"), nullable=False)
 
     parent = relationship("Pose", backref="children", remote_side=[id])
@@ -195,7 +193,7 @@ class Observation(Base):
     __tablename__ = ObservationType.Observation.value
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
-    # Allowing this redundancy will allow us to use relationship and also contrainting the sensor
+    # Allowing this redundancy will allow us to use relationship and also constraining the sensor
     # type via the specific joined inherit table.
     # TODO: check if a view were better (at least as long it is no foreign key, does not work with views).
     sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"))
@@ -333,7 +331,7 @@ class Edge(Base):
     )
 
 
-# TODO: We could implement n-ary associations via extra edge table (so that the ossiciated ids are flexible)
+# TODO: We could implement n-ary associations via extra edge table (so that the associated ids are flexible)
 #       e.g., edge id, observation-id as array or an order idx. If we do not want specializations then
 #       a JSON blob would capture any data.
 class UnaryEdge(Edge):
@@ -344,7 +342,7 @@ class UnaryEdge(Edge):
 
     position = Column(Geometry("POINTZ"),
                       comment="Position off associated pose")
-    normal = Column(Geometry("POINTZ"),
+    rotation_vector = Column(Geometry("POINTZ"),
                            comment="Orientation (rotational component)")
 
     __mapper_args__ = {
@@ -371,7 +369,7 @@ class BetweenEdge(Edge):
         "observation.id"), nullable=False)
     rel_position = Column(Geometry("POINTZ"),
                       comment="Relative position change off associated pose")
-    rel_normal = Column(Geometry("POINTZ"),
+    rel_rotation_vector = Column(Geometry("POINTZ"),
                            comment="Relative orientation change (rotational component)")
     edge_info = Column(JSON, comment="Additional information, e.g., is loop edge")
 
@@ -454,8 +452,8 @@ class Landmark(Base):
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
     position = Column(Geometry("POINTZ"))
-    normal = Column(Geometry("POINTZ"),
-                           comment="Absolute orientation as normal vector in the map frame (at position); null if not used.")
+    rotation_vector = Column(Geometry("POINTZ"),
+                           comment="Absolute orientation as rotation vector in the map frame (at position); null if not used.")
     uncertainty_model = Column(String,
                                comment="Type of uncertainty model in uncertainty JSON blob, not used if null.")
     uncertainty = Column(JSON,
