@@ -7,6 +7,7 @@ from geoalchemy2 import func
 from tqdm import tqdm
 from sqlalchemy import table, column, select, join, func
 from sqlalchemy.dialects import postgresql
+from scipy.spatial.transform import Rotation
 
 def to_db(session, input_file, map_name):
     with open(input_file, "rb") as data_file:
@@ -62,12 +63,11 @@ def to_db(session, input_file, map_name):
             undists_msgpack = keyframe_msgpack["undists"]
 
             trans_cw = keyframe_msgpack["trans_cw"]
-            # TODO: Calculate unit vector from quaternion and add to pose
-            euler = utils.quaternion_to_euler(*keyframe_msgpack["rot_cw"])
+            pose_rotvec = Rotation.from_quat(keyframe_msgpack["rot_cw"]).as_rotvec()
             pose = Pose(
                 position=f"POINTZ({trans_cw[0]} {trans_cw[1]} {trans_cw[2]})",
                 # TODO: normal vector or euler?
-                normal=f"POINTZ({euler[0]} {euler[1]} {euler[2]})",
+                rotation_vector=f"POINTZ({pose_rotvec[0]} {pose_rotvec[1]} {pose_rotvec[2]})",
                 posegraph=pg)
             poses.append(pose)
 
@@ -239,7 +239,12 @@ def to_file(session, output_file, map_name):
                                         .join(BetweenEdge, Observation.id == BetweenEdge.to_observation_id)
                                         .filter(text("(edge_info->>'is_loop_edge')::boolean = true"))
                                         .filter(BetweenEdge.from_observation_id == observation.id).all()]
-
+            position_stmt = select([func.ST_X(observation.pose.position), func.ST_Y(observation.pose.position), func.ST_Z(observation.pose.position),
+                                func.ST_X(observation.pose.rotation_vector), func.ST_Y(observation.pose.rotation_vector),
+                                func.ST_Z(observation.pose.rotation_vector)])
+            position_and_rotation_vector = session.execute(position_stmt).one()
+            position = position_and_rotation_vector[0:3]
+            quaternion = Rotation.from_rotvec(position_and_rotation_vector[3:7]).as_quat().tolist()
             keyframes[kf_idx] = {'cam': observation.sensor.name,
                                 'depth_thr': observation.algorithm_settings['openVSLAM']['depth_thr'],
                                 'depths': depths,
@@ -249,20 +254,12 @@ def to_file(session, output_file, map_name):
                                 'loop_edges': loop_edges,
                                 'n_keypts': len(observation.keypoints),
                                 'n_scale_levels': observation.algorithm_settings['openVSLAM']['n_scale_levels'],
-                                'rot_cw': utils.euler_to_quaternion(
-                                    roll=session.execute(
-                                        func.ST_X(observation.pose.rotation_vector)).scalar(),
-                                    pitch=session.execute(
-                                        func.ST_Y(observation.pose.rotation_vector)).scalar(),
-                                    yaw=session.execute(func.ST_Z(observation.pose.rotation_vector)).scalar()),
+                                'rot_cw': quaternion,
                                 'scale_factor': observation.algorithm_settings['openVSLAM']['scale_factor'],
                                 'span_children': span_children,
                                 'span_parent': -1 if len(span_parent) == 0 else span_parent[0],
                                 'src_frm_id': 0,
-                                'trans_cw': [session.execute(func.ST_X(observation.pose.position)).scalar(),
-                                            session.execute(
-                                                func.ST_Y(observation.pose.position)).scalar(),
-                                            session.execute(func.ST_Z(observation.pose.position)).scalar()],
+                                'trans_cw': position,
                                 'ts': (observation.updated_at-datetime(1970, 1, 1)).total_seconds(),
                                 'undist': undist,
                                 'x_rights': x_rights

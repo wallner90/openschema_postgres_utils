@@ -65,7 +65,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader_openvslam",
+                "test_map_loader_openvslam_3",
                 "-i",
                 "/workspaces/openschema_postgres_utils/data/knapp_2022_03_03_dobl_test_env.msg",
                 "--create_public_schema"
@@ -89,7 +89,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader_openvslam",
+                "test_map_loader_openvslam_3",
                 "-o",
                 "/workspaces/openschema_postgres_utils/data/output_file_test.msg",
             ],
