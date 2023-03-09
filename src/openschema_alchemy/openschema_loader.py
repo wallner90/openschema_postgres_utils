@@ -1,5 +1,5 @@
 import argparse
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.orm import sessionmaker
 
@@ -40,13 +40,13 @@ def main():
         return
 
     engine = create_engine(args.db_connection)
-    if args.mode == "to_db" and args.create_public_schema == True:
-        if not engine.dialect.has_schema(engine, 'public'):
-            engine.execute(CreateSchema('public'))
-
-        model.Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
+
+    if args.mode == "to_db" and args.create_public_schema == True:
+        session.execute(text('CREATE SCHEMA IF NOT EXISTS public'))
+        model.Base.metadata.create_all(engine)
+
 
     if args.mode == "to_db":
         print(f"INFO: Import data from '{args.format}' into database.")

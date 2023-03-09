@@ -65,7 +65,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader_openvslam_3",
+                "test_map_loader_openvslam_4",
                 "-i",
                 "/workspaces/openschema_postgres_utils/data/knapp_2022_03_03_dobl_test_env.msg",
                 "--create_public_schema"
@@ -82,6 +82,33 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
             "args": [
+                "-m",
+                "to_file",
+                "-f",
+                "openVSLAM",
+                "-c",
+                "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
+                "-n",
+                "test_map_loader_openvslam_3",
+                "-o",
+                "/workspaces/openschema_postgres_utils/data/output_file_test.msg",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Profile: openSCHEMA loader: openVSLAM db->file",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            // "args": [
+            //     "-o", "/tmp/tmp.prof", "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py -m to_file -f openVSLAM -c postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait -n test_map_loader_openvslam_3 -o /workspaces/openschema_postgres_utils/data/output_file_test.msg"
+            // ],
+            // "program": "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
+            "args": ["-o", "/tmp/tmp.prof", "${workspaceFolder}/src/openschema_alchemy/openschema_loader.py",
                 "-m",
                 "to_file",
                 "-f",

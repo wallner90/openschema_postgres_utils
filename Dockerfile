@@ -36,5 +36,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get autoremove -y -qq \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install SQLAlchemy GeoAlchemy2 GeoPandas fiona pyproj rtree shapely msgpack-python tqdm pyclothoid scipy
+RUN pip3 install SQLAlchemy GeoAlchemy2 GeoPandas fiona pyproj rtree shapely msgpack-python tqdm pyclothoids scipy
 

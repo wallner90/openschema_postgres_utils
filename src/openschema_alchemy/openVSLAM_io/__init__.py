@@ -132,7 +132,7 @@ def to_file(session, output_file, map_name):
         PoseGraph).join(Map).filter(Map.name == map_name).all()
 
     all_observations = session.query(Observation).join(Pose).join(
-        PoseGraph).join(Map).filter(Map.name == map_name).all()
+        PoseGraph).join(Map).filter(Map.name == map_name).limit(30).all()
     # UUID -> IDX mapping
     observation_uuid_idx_map = {}
     for idx, observation in enumerate(all_observations):
@@ -192,7 +192,7 @@ def to_file(session, output_file, map_name):
             f"   WHERE map.name = '{map_name}' "
 
         landmarks = {}
-        for special_landmark_query in tqdm(session.execute(optimized_landmark_query).all()):
+        for special_landmark_query in tqdm(session.execute(text(optimized_landmark_query)).all()):
             lm_idx = landmark_uuid_idx_map[special_landmark_query.lm_id]
             landmarks[lm_idx] = {'1st_keyfrm': special_landmark_query.cobs_id,
                                 'n_fnd': special_landmark_query.n_vis,
@@ -239,9 +239,9 @@ def to_file(session, output_file, map_name):
                                         .join(BetweenEdge, Observation.id == BetweenEdge.to_observation_id)
                                         .filter(text("(edge_info->>'is_loop_edge')::boolean = true"))
                                         .filter(BetweenEdge.from_observation_id == observation.id).all()]
-            position_stmt = select([func.ST_X(observation.pose.position), func.ST_Y(observation.pose.position), func.ST_Z(observation.pose.position),
+            position_stmt = select(func.ST_X(observation.pose.position), func.ST_Y(observation.pose.position), func.ST_Z(observation.pose.position),
                                 func.ST_X(observation.pose.rotation_vector), func.ST_Y(observation.pose.rotation_vector),
-                                func.ST_Z(observation.pose.rotation_vector)])
+                                func.ST_Z(observation.pose.rotation_vector))
             position_and_rotation_vector = session.execute(position_stmt).one()
             position = position_and_rotation_vector[0:3]
             quaternion = Rotation.from_rotvec(position_and_rotation_vector[3:7]).as_quat().tolist()
