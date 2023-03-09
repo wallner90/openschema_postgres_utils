@@ -132,7 +132,7 @@ def to_file(session, output_file, map_name):
         PoseGraph).join(Map).filter(Map.name == map_name).all()
 
     all_observations = session.query(Observation).join(Pose).join(
-        PoseGraph).join(Map).filter(Map.name == map_name).limit(30).all()
+        PoseGraph).join(Map).filter(Map.name == map_name).all()
     # UUID -> IDX mapping
     observation_uuid_idx_map = {}
     for idx, observation in enumerate(all_observations):
