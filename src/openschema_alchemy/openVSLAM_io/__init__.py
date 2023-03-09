@@ -9,6 +9,8 @@ from sqlalchemy import table, column, select, join, func
 from sqlalchemy.dialects import postgresql
 from scipy.spatial.transform import Rotation
 
+from timeit import default_timer as timer
+
 def to_db(session, input_file, map_name):
     with open(input_file, "rb") as data_file:
         loaded_data = msgpack.unpackb(
@@ -28,11 +30,11 @@ def to_db(session, input_file, map_name):
                         "openVSLAM_config": loaded_data["cameras"][camera_name]}, sensor_rig=sensor_rig)
 
         ts = datetime.utcnow()
-        newmap = Map(name=map_name,
+        map = Map(name=map_name,
                      description={"T_global": [0.0]*12},
                      created_at=ts, updated_at=ts)
 
-        pg = PoseGraph(name="SLAM graph", map=newmap,
+        pg = PoseGraph(name="SLAM graph", map=map,
                        description={"Some_generic_setting": 0.2})
         sensor_rig.posegraph = pg
 
@@ -98,10 +100,15 @@ def to_db(session, input_file, map_name):
                     ckp.landmark = landmarks[int(lm_id)]
                 camera_keypoints.append(ckp)
 
-        session.add_all([newmap, pg, sensor_rig, camera] +
-                        list(landmarks.values()) +
-                        camera_keypoints + poses + list(observations.values()))
+        print("Adding map, pg, sensor_rig, and camera, landmarks, keypoints, poses, and observations to DB...")
+        start_add_to_db_time = timer()
+        session.add_all([map, pg, sensor_rig, camera] + 
+                         list(landmarks.values()) + 
+                         camera_keypoints + poses + list(observations.values()))
         session.commit()
+        session.flush()
+        finished_add_to_db_time = timer()
+        print(f"... finished ({finished_add_to_db_time-start_add_to_db_time}s).")
 
         # TODO: adding CameraObservation as Observation is not possible direct -> need to add id manually -> need to commit first to get an ID
         # Maybe there is a more elgant way to use the automatic deduction of dependencies with inheritence / upcast? E.g., observation_id = Observation(current_observation).
@@ -120,8 +127,13 @@ def to_db(session, input_file, map_name):
                 edges.append(BetweenEdge(from_observation_id=current_observation.id,
                                          to_observation_id=child_observation.id, edge_info={"is_loop_edge": True}))
 
+        print("Adding edges to DB...")
+        start_add_to_db_time = timer()
         session.add_all(edges)
         session.commit()
+        session.flush()
+        finished_add_to_db_time = timer()
+        print(f"... finished ({finished_add_to_db_time-start_add_to_db_time}s).")
 
 
 def to_file(session, output_file, map_name):
