@@ -5,6 +5,8 @@ from datetime import datetime
 import json
 
 from pyclothoids import Clothoid
+from scipy.spatial.transform import Rotation
+
 
 from model import *
 
@@ -65,9 +67,10 @@ def to_db(session, input_file, map_name):
                 for station in stations:
                     if station["id"] == stationId:
                         relatedStations.append(station)
-
+            
+            pose_rotvec_1 = Rotation.from_euler('zyx', [sin(pos_yaw_1 * (180 / pi)) * cos(0), 0.0, cos(pos_yaw_1 * (180 / pi)) * cos(0)]).as_rotvec()
             lm_1 = Landmark(position=f'POINTZ({pos_x_1} {pos_y_1} {0})',
-                                            rotation_vector=f'POINTZ({sin(pos_yaw_1 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_1 * (180 / pi)) * cos(0)})',
+                                            rotation_vector=f'POINTZ({pose_rotvec_1[0]} {pose_rotvec_1[1]} {pose_rotvec_1[2]})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_1,
                                                         "goalProperty": goal1["goalProperty"]})
             landmarks.append(lm_1)
@@ -112,8 +115,9 @@ def to_db(session, input_file, map_name):
                     if station["id"] == stationId:
                         relatedStations.append(station)
 
+            pose_rotvec_2 = Rotation.from_euler("zyx", [sin(pos_yaw_2 * (180 / pi)) * cos(0), 0.0, cos(pos_yaw_2 * (180 / pi)) * cos(0)]).as_rotvec()
             lm_2 = Landmark(position=f'POINTZ({pos_x_2} {pos_y_2} {0})',
-                                            rotation_vector=f'POINTZ({sin(pos_yaw_2 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_2 * (180 / pi)) * cos(0)})',
+                                            rotation_vector=f'POINTZ({pose_rotvec_2[0]} {pose_rotvec_2[1]} {pose_rotvec_2[2]})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_2,
                                                         "goalProperty": goal2["goalProperty"]})
             landmarks.append(lm_2)     

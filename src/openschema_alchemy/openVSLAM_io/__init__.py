@@ -66,7 +66,6 @@ def to_db(session, input_file, map_name):
             pose_rotvec = Rotation.from_quat(keyframe_msgpack["rot_cw"]).as_rotvec()
             pose = Pose(
                 position=f"POINTZ({trans_cw[0]} {trans_cw[1]} {trans_cw[2]})",
-                # TODO: normal vector or euler?
                 rotation_vector=f"POINTZ({pose_rotvec[0]} {pose_rotvec[1]} {pose_rotvec[2]})",
                 posegraph=pg)
             poses.append(pose)
