@@ -67,7 +67,7 @@ def to_db(session, input_file, map_name):
                         relatedStations.append(station)
 
             lm_1 = Landmark(position=f'POINTZ({pos_x_1} {pos_y_1} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw_1 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_1 * (180 / pi)) * cos(0)})',
+                                            rotation_vector=f'POINTZ({sin(pos_yaw_1 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_1 * (180 / pi)) * cos(0)})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_1,
                                                         "goalProperty": goal1["goalProperty"]})
             landmarks.append(lm_1)
@@ -113,7 +113,7 @@ def to_db(session, input_file, map_name):
                         relatedStations.append(station)
 
             lm_2 = Landmark(position=f'POINTZ({pos_x_2} {pos_y_2} {0})',
-                                            normal=f'POINTZ({sin(pos_yaw_2 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_2 * (180 / pi)) * cos(0)})',
+                                            rotation_vector=f'POINTZ({sin(pos_yaw_2 * (180 / pi)) * cos(0)} {0} {cos(pos_yaw_2 * (180 / pi)) * cos(0)})',
                                             descriptor={"stations": relatedStations, "goalId": goal_id_2,
                                                         "goalProperty": goal2["goalProperty"]})
             landmarks.append(lm_2)     
