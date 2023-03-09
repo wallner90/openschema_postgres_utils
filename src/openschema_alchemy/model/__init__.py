@@ -467,9 +467,7 @@ class Landmark(Base):
 
 class ManyLandmarkHasManySemanticGeometry(Base):
     __tablename__ = "many_landmarks_has_many_semantic_geometries"
-    id = Column(UUID(as_uuid=True), primary_key=True,
-                server_default=text("uuid_generate_v4()"))
-    landmark_id = Column(ForeignKey("landmark.id", primary_key=True))
+    landmark_id = Column(ForeignKey("landmark.id"), primary_key=True)
     semantic_geometry_id = Column(ForeignKey("semantic_geometry.id"), primary_key=True)
     order_idx = Column(Integer)
     landmark = relationship("Landmark", back_populates="semantic_geometries")
