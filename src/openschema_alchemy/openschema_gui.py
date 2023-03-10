@@ -57,13 +57,13 @@ def main():
 
     layout = [[
         connection_input_line,
-        schemas_drop_down_line,
-        tables_drop_down_line,
+        [*schemas_drop_down_line, sg.VerticalSeparator(),
+        *tables_drop_down_line],
         table_view
     ]]
 
     window = sg.Window("openSCHEMA GUI", layout, resizable=True,
-                       finalize=True, size=(1024,400))
+                       finalize=True, size=(800,300))
     window["-CONNECTION-URI-"].expand(expand_x=True)
     window["-SCHEMAS-DROP-DOWN-"].expand(expand_x=True)
     window["-TABLES-DROP-DOWN-"].expand(expand_x=True)
