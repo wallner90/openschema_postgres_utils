@@ -30,8 +30,10 @@ def main():
                         help="Full path to output file if 'to_file' is chosen.")
     parser.add_argument("-i", "--input_file", type=str,
                         help="Full path to input file if 'to_db' is chosen.")
-    parser.add_argument("--input_dir", type=str, help="Full path to input directory if mode='to_db' and format='maplab'.")
-    parser.add_argument("--output_dir", type=str, help="Full path to output directory if mode='to_file' and format='maplab'.")
+    parser.add_argument("--input_dir", type=str,
+                        help="Full path to input directory if mode='to_db' and format='maplab'.")
+    parser.add_argument("--output_dir", type=str,
+                        help="Full path to output directory if mode='to_file' and format='maplab'.")
 
     parser.add_argument("--create_public_schema", action='store_true',
                         help="For 'to_db' mode only: Create schema 'public' if it does not exist.")
@@ -46,7 +48,6 @@ def main():
     if args.mode == "to_db" and args.create_public_schema == True:
         session.execute(text('CREATE SCHEMA IF NOT EXISTS public'))
         model.Base.metadata.create_all(engine)
-
 
     if args.mode == "to_db":
         print(f"INFO: Import data from '{args.format}' into database.")
