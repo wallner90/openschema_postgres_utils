@@ -12,7 +12,7 @@ from geoalchemy2 import Geometry
 def main():
 
     default_connection_uri = "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait"
-    default_schema = "public"
+    active_schema = None
     table_details_columns = ['name', 'type', 'nullable',
                              'default', 'autoincrement', 'comment']
 
@@ -21,53 +21,55 @@ def main():
     session = None
 
     connection_input_line = [
-        sg.Text("Connection:"),
-        sg.InputText(default_text=default_connection_uri, size=(
-            70, 1), key="-CONNECTION-URI-"),
-        sg.Button("connect", key="-CONNECT-"),
+        sg.Text("Connection:", size=(10, 1)),
+        sg.InputText(default_text=default_connection_uri, 
+                     key="-CONNECTION-URI-"),
+        sg.Button("connect", 
+                  key="-CONNECT-", 
+                  size=(10, 1)),
     ]
     schemas_drop_down_line = [
-        sg.Text("Schema:"),
-        sg.DropDown(["---"],
+        sg.Text("Schema:", size=(10, 1)),
+        sg.DropDown([""],
                     key="-SCHEMAS-DROP-DOWN-",
-                    default_value=["---"],
                     readonly=True,
-                    size=(50, 1),
                     disabled=True),
         sg.Button("select", key="-SELECT-SCHEMA-",
-                  disabled=True),
+                  disabled=True,
+                  size=(10, 1)),
     ]
     tables_drop_down_line = [
-        sg.Text("Table:"),
-        sg.DropDown(["---"],
+        sg.Text("Table:", size=(10, 1)),
+        sg.DropDown([""],
                     key="-TABLES-DROP-DOWN-",
-                    default_value=["---"],
                     readonly=True,
-                    size=(50, 1),
                     disabled=True),
         sg.Button("select", key="-SELECT-TABLE-",
-                  disabled=True),
+                  disabled=True,
+                  size=(10,1)),
     ]
     table_view = [
         sg.Table(values=[[]],
                  key="-TABLE-DETAIL-VIEW-",
                  headings=table_details_columns, auto_size_columns=True, max_col_width=100)
-        # sg.Text("Table Elements")
     ]
-    table_view_col = sg.Column([table_view])
+    # table_view_col = sg.Column([table_view])
 
     layout = [[
         connection_input_line,
         schemas_drop_down_line,
         tables_drop_down_line,
-        table_view_col
+        table_view
     ]]
 
-    window = sg.Window("openSCHEMA GUI", layout, auto_size_text=True,
-                       auto_size_buttons=True, resizable=True,
-                       border_depth=5, finalize=True)
-    window["-TABLE-DETAIL-VIEW-"].expand(True, True)
-    table_view_col.expand(True, True)
+    window = sg.Window("openSCHEMA GUI", layout, resizable=True,
+                       finalize=True, size=(1024,400))
+    window["-CONNECTION-URI-"].expand(expand_x=True)
+    window["-SCHEMAS-DROP-DOWN-"].expand(expand_x=True)
+    window["-TABLES-DROP-DOWN-"].expand(expand_x=True)
+    window["-TABLE-DETAIL-VIEW-"].expand(expand_x=True, expand_y=True, expand_row=True)
+    # window["-TABLE-DETAIL-VIEW-"].expand(True, True)
+    # table_view_col.expand(True, True)
 
     # Run the Event Loop
     while True:
@@ -87,6 +89,7 @@ def main():
                 window["-SCHEMAS-DROP-DOWN-"].update(values=[], disabled=True)
                 window["-TABLES-DROP-DOWN-"].update(values=[], disabled=True)
                 window["-SELECT-TABLE-"].update(disabled=True)
+                sg.popup("Connection URI is invalid!")
                 continue
             Session = sessionmaker(bind=engine)
             session = Session()
@@ -100,10 +103,12 @@ def main():
             window["-SELECT-SCHEMA-"].update(disabled=False)
 
         elif event == "-SELECT-SCHEMA-":
-            default_schema = values["-SCHEMAS-DROP-DOWN-"]
+            active_schema = values["-SCHEMAS-DROP-DOWN-"]
+            if not active_schema:
+                continue
             try:
                 window["-TABLES-DROP-DOWN-"].update(
-                    values=[*inspect(engine).get_table_names(schema=default_schema)], disabled=False)
+                    values=[*inspect(engine).get_table_names(schema=active_schema)], disabled=False)
                 window["-SELECT-TABLE-"].update(disabled=False)
             except:
                 window["-TABLES-DROP-DOWN-"].update(
@@ -121,8 +126,8 @@ def main():
                 row = [item[key] for key in table_details_columns]
                 values.append(row)
             window["-TABLE-DETAIL-VIEW-"].update(values=values)
-            table_view_col.expand(True, True)
-            window["-TABLE-DETAIL-VIEW-"].expand(True, True)
+            # table_view_col.expand(True, True)
+            # window["-TABLE-DETAIL-VIEW-"].expand(True, True)
 
     window.close()
 
