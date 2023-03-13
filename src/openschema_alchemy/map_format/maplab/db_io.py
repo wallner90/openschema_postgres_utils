@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation
 from sqlalchemy import select, func
 from tqdm.asyncio import tqdm
 from uuid import UUID, uuid4
-from maplab.vi_map import VIMap, uuid_from_aslam_id, aslam_id_from_uuid, get_edge_type, vi_map_pb2
+from map_format.maplab.vi_map import VIMap, uuid_from_aslam_id, aslam_id_from_uuid, get_edge_type, vi_map_pb2
 from model import Landmark, Map, PoseGraph, SensorRig, Camera, IMU, Pose, CameraObservation, CameraKeypoint, \
     BetweenEdge, Observation, ObservationType
 from google.protobuf.json_format import MessageToDict, ParseDict

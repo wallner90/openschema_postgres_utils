@@ -41,11 +41,11 @@ def args_sanity_check(args) -> bool:
     elif args.mode == "to_file":
         if args.format == "maplab":
             if not args.output_dir:
-                printf(f"Error: Exporting to directory but 'output_dir' is empty!")
-                return false
+                print(f"Error: Exporting to directory but 'output_dir' is empty!")
+                return False
             elif not Path(args.output_dir).is_dir():
-                printf(f"Error: Exporting to directory {args.output_dir} not possible!")
-                return false
+                print(f"Error: Exporting to directory {args.output_dir} not possible!")
+                return False
         else:
             if not args.output_file:
                 print(f"Error: Exporting to file but 'output_file' is empty!")

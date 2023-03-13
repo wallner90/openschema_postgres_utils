@@ -5,7 +5,7 @@ import numpy as np
 
 from uuid import UUID
 from google.protobuf import text_format
-from maplab.protobuf import vi_map_pb2
+from map_format.maplab.protobuf import vi_map_pb2
 
 
 def get_edge_type(edge_dict):

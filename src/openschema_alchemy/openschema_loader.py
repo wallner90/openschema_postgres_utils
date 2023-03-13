@@ -5,18 +5,18 @@ from sqlalchemy.orm import sessionmaker
 
 import openschema_utils
 import model
-import openVSLAM_io
-import lane_map_json_io
-import lidar_io
-from maplab import db_io as maplab_io
+from map_format.openVSLAM import open_vslam_io as open_vslam_io
+from map_format.lane_map import lane_map_json_io as lane_map_io
+from map_format.lidar import lidar_io as lidar_io
+from map_format.maplab import db_io as maplab_io
 
 
 def main():
     # data format input/output with interface 'to_db' and 'to_file'
-    io_format = {"openVSLAM": openVSLAM_io,
+    io_format = {"openVSLAM": open_vslam_io,
                  "maplab": maplab_io,
                  "lidar": lidar_io,
-                 "lanemap": lane_map_json_io}
+                 "lanemap": lane_map_io}
     parser = argparse.ArgumentParser(
         description="openSCHEMA data loader: Load and store data to postgreSQL database.")
     parser.add_argument("-m", "--mode", type=str, choices=["to_file", "to_db"], required=True,
