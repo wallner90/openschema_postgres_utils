@@ -89,7 +89,7 @@
                 "-c",
                 "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait",
                 "-n",
-                "test_map_loader_openvslam_3",
+                "test_map_loader_openvslam_4",
                 "-o",
                 "/workspaces/openschema_postgres_utils/data/output_file_test.msg",
             ],
