@@ -15,8 +15,8 @@ def main():
 
     default_connection_uri = "postgresql://postgres:postgres@localhost:5432/postgres_alchemy_ait"
     active_schema = None
-    table_details_columns = ['name', 'type', 'nullable',
-                             'default', 'autoincrement', 'comment']
+
+    exportable_elements = ["Pose", "Landmark"]
 
     engine = None
     Session = None
@@ -51,41 +51,19 @@ def main():
                   size=(10, 1)),
     ]
 
-    # element_select_lines = [
-    #     [
-    #         sg.Text(f"{elem}:"),
-    #         sg.Text("( "),
-    #         sg.Text("0", key=f"-CHECKBOX-{elem.upper()}-COUNT-TEXT-"),
-    #         sg.Text(" )"),
-    #         # sg.In(key=f"-SAVE-{elem.upper()}-FILENAME-"),
-    #         sg.FileSaveAs(key=f"-SAVE-{elem.upper()}-AS-DIALOG-",
-    #                 target=(None, None),
-    #                 file_types=(("PCD", ".pcd"),),
-    #                 disabled=True,
-    #                 default_extension="*.*",
-    #                 change_submits=True, enable_events=True),
-    #         sg.Button("save", key=f"-SAVE-{elem.upper()}-BUTTON", disabled=True)] for elem in ["Pose"]
-    # ]
-
     element_select_lines = [
         [
-            sg.Text("Pose:"),
-            sg.Text("( )"),
-            sg.Text("0", key="-CHECKBOX-POSE-COUNT-TEXT-"),
+            sg.Text(f"{elem}:"),
+            sg.Text("( "),
+            sg.Text("0", key=f"-CHECKBOX-{elem.upper()}-COUNT-TEXT-"),
             sg.Text(" )"),
             sg.Input(),
-            sg.FileSaveAs(button_text="browse...", key="-SAVE-POSE-AS-DIALOG-", disabled=True),
-            sg.Button("save", key="-SAVE-POSE-BUTTON-", disabled=True)
-        ]
+            sg.FileSaveAs(button_text="browse",
+                          key=f"-SAVE-{elem.upper()}-AS-DIALOG-", disabled=True),
+            sg.Button(
+                "save", key=f"-SAVE-{elem.upper()}-BUTTON-", disabled=True)
+        ] for elem in exportable_elements
     ]
-
-    # save_file_line = [
-    #     sg.SaveAs(key="-SAVE-POINTS-AS-DIALOG-",
-    #               file_types=(("PCD", ".pcd"),),
-    #               disabled=True,
-    #               default_extension="*.*",
-    #               change_submits=True)
-    # ]
 
     layout = [[
         connection_input_line,
@@ -151,16 +129,16 @@ def main():
             try:
                 map = session.query(Map).filter(Map.name == active_map).one()
                 poses = map.posegraphs[0].poses
-                landmarks = session.query(Landmark).join(Keypoint).join(
+                num_landmarks = session.query(Landmark).join(Keypoint).join(
                     Observation, Keypoint.observation_id == Observation.id).join(
-                    Pose).join(PoseGraph).join(Map).filter(Map.name == active_map).all()
+                    Pose).join(PoseGraph).join(Map).filter(Map.name == active_map).count()
                 window["-CHECKBOX-POSE-COUNT-TEXT-"].update(
                     value=f"{len(poses)}")
-                # window["-CHECKBOX-LANDMARK-COUNT-TEXT-"].update(
-                #     value=f"{len(landmarks)}")
-                window["-SAVE-POSE-AS-DIALOG-"].update(disabled=False)
-                # window["-SAVE-LANDMARK-AS-DIALOG-"].update(disabled=False)
-                window["-SAVE-POSE-BUTTON-"].update(disabled=False)
+                window["-CHECKBOX-LANDMARK-COUNT-TEXT-"].update(
+                    value=f"{num_landmarks}")
+                for exp_elem in exportable_elements:
+                    window[f"-SAVE-{exp_elem.upper()}-AS-DIALOG-"].update(disabled=False)
+                    window[f"-SAVE-{exp_elem.upper()}-BUTTON-"].update(disabled=False)
             except:
                 pass
 
@@ -168,25 +146,21 @@ def main():
             out_file = values["-SAVE-POSE-AS-DIALOG-"]
             pcd = o3d.geometry.PointCloud()
             map = session.query(Map).filter(Map.name == active_map).one()
-            poses = [session.execute(select(func.ST_X(pose.position), func.ST_Y(
+            poses = map.posegraphs[0].poses
+            poses_out = [session.execute(select(func.ST_X(pose.position), func.ST_Y(
                 pose.position), func.ST_Z(pose.position))).one() for pose in poses]
-            pcd.points = o3d.utility.Vector3dVector(poses)
+            pcd.points = o3d.utility.Vector3dVector(poses_out)
             o3d.io.write_point_cloud(out_file, pcd)
 
-        # elif event == "-SAVE-LANDMARK-AS-DIALOG-":
-        #     test = 1
-        #     # out_file = values["-SAVE-POINTS-AS-DIALOG-"]
-        #     # save_pos = values["-CHECKBOX-POSE-SELECT-"]
-        #     # save_lms = values["-CHECKBOX-LANDMARK-SELECT-"]
-        #     # pcd = o3d.geometry.PointCloud()
-        #     # if save_pos:
-        #     #     map = session.query(Map).filter(Map.name == active_map).one()
-        #     #     poses = [session.execute(select(func.ST_X(pose.position), func.ST_Y(pose.position), func.ST_Z(pose.position))).one() for pose in poses]
-        #     #     # points = [(position.)]
-        #     #     pcd.points = o3d.utility.Vector3dVector(poses)
-        #     #     o3d.io.write_point_cloud(out_file, pcd)
-        #     # test = 1
-
+        elif event == "-SAVE-LANDMARK-BUTTON-":
+            out_file = values["-SAVE-LANDMARK-AS-DIALOG-"]
+            pcd = o3d.geometry.PointCloud()
+            map = session.query(Map).filter(Map.name == active_map).one()
+            lms = session.query(Landmark).join(Keypoint).join(Observation).join(Pose).join(PoseGraph).join(Map).filter(Map.name == active_map).all()
+            lms_out = [session.execute(select(func.ST_X(lm.position), func.ST_Y(
+                lm.position), func.ST_Z(lm.position))).one() for lm in lms]
+            pcd.points = o3d.utility.Vector3dVector(lms_out)
+            o3d.io.write_point_cloud(out_file, pcd)
     window.close()
 
 

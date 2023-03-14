@@ -22,6 +22,8 @@
 		"QT_X11_NO_MITSHM=1",
 		"-e",
 		"XDG_RUNTIME_DIR=${env:XDG_RUNTIME_DIR}",
+		"-e",
+		"XAUTHORITY=/vscode/.Xauthority",
 		"-v",
 		"${localEnv:HOME}/.Xauthority:/vscode/.Xauthority:rw",
 		"-v",
