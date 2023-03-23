@@ -23,10 +23,10 @@ def main():
 
     piles = {}
     for obj in session.query(Landmark).filter(text("descriptor->>'type' = 'pile'")).all():
-        piles.setdefault(obj.descriptor['pile_nr'], []).append(obj)
+        if not obj.semantic_geometries: piles.setdefault(obj.descriptor['pile_nr'], []).append(obj)
 
     ts = datetime.utcnow()
-    map = Map(name='sem_polygon_map',
+    map = Map(name='sem_polygon_map_2',
               description={"T_global": [
                   0.0]*12, "AuthorithyID": "EPSG:25833", "CRS": "ETRS89 / UTM zone 33N"},
               created_at=ts, updated_at=ts)
@@ -65,19 +65,7 @@ def main():
 
     print("test")
 
-    # query = "SET postgis.gdal_enabled_drivers = 'ENABLE_ALL'; SELECT ST_AsGDALRaster(rast, 'GTiff') FROM ortho_raster_indexed;"
 
-    # result = session.execute(text(query))
-
-    # with MemoryFile(result.fetchall()[0][0].tobytes()) as memfile:
-    #     ds = memfile.open()
-    #     show(ds)
-    #     print("Test")
-    # # with rasterio.open(result[0]) as src:
-    # #     raster_data = src.read(1)
-    # #     rasterio.plot.show(raster_data)
-
-    # session.close_all()
 
 
 if __name__ == '__main__':
