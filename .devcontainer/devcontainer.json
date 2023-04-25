@@ -49,5 +49,6 @@
 	"features": {
 		"git": "os-provided",
 		"git-lfs": "latest"
+		// "./devcontainer-features/src/vac-as-apt": {}
 	}
 }
