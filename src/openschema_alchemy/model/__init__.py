@@ -487,20 +487,20 @@ class ManyLandmarkHasManySemanticGeometry(Base):
 # )
 
 class SemanticGeometryType(enum.Enum):
-    Geometry = "geometry"
-    Linestring = "line_string"
-    Polygon = "polygon"
-    Object  = "object"
+    Geometry = "semantic_geometry"
+    Linestring = "semantic_line_string"
+    Polygon = "semantic_polygon"
+    Object  = "semantic_object"
 
 
 def geometry_table_name(type: SemanticGeometryType) -> str:
-    return f"semantic_{type.value}"
+    return f"{type.value}"
 
 class SemanticGeometry(Base):
-    __tablename__ = geometry_table_name(SemanticGeometryType.Geometry)
+    __tablename__ = SemanticGeometryType.Geometry.value
     id = Column(UUID(as_uuid=True), primary_key=True,
                 server_default=text("uuid_generate_v4()"))
-    type = Column(String)
+    type = Column(Enum(SemanticGeometryType))
     description = Column(
         JSON, comment="Depending on type, description of geometry (e.g., linestring, lane, area, ...)")
     landmarks = relationship(
@@ -529,7 +529,7 @@ class SemanticLineString(SemanticGeometry):
     id = Column(UUID(as_uuid=True), ForeignKey(
         "semantic_geometry.id"), primary_key=True)
     __mapper_args__ = {
-        "polymorphic_identity":  SemanticGeometryType.Linestring
+        "polymorphic_identity":  SemanticGeometryType.Linestring,
     }
 
 class SemanticPolygon(SemanticGeometry):
@@ -537,7 +537,7 @@ class SemanticPolygon(SemanticGeometry):
     id = Column(UUID(as_uuid=True), ForeignKey(
         "semantic_geometry.id"), primary_key=True)
     __mapper_args__ = {
-        "polymorphic_identity":  SemanticGeometryType.Polygon
+        "polymorphic_identity":  SemanticGeometryType.Polygon,
     }
 
 class SemanticRegulatoryElement(Base):

@@ -52,8 +52,8 @@ def to_db(session, input_file, map_name):
         semantic_lines_info = {}
         semantic_line_id = 0
         for lane in list(lanes):
-            semantic_line1 = SemanticLineString(type=SemanticGeometryType.Linestring.value)
-            semantic_line2 = SemanticLineString(type=SemanticGeometryType.Linestring.value)
+            semantic_line1 = SemanticLineString()
+            semantic_line2 = SemanticLineString()
            
             print("lane is ", lane)
             goal_id_1 = lane["startNodeId"] - 1  # goal 1 is start Node!

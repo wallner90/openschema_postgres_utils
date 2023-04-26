@@ -12,10 +12,12 @@ from rasterio.plot import show
 from rasterio import open as raster_open
 from rasterio.enums import ColorInterp
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 
 import numpy as np
+
+import re
 
 from datetime import datetime
 
@@ -28,10 +30,32 @@ import matplotlib
 
 
 def draw_figure(canvas, figure):
+    # canvas.pack_forget()
+    canvas.delete()
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
-    figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
+    figure_canvas_agg.get_tk_widget().pack(side='right', fill='both', expand=1)
+    # canvas.pack()
     return figure_canvas_agg
+
+
+def draw_figure_w_toolbar(canvas, fig, canvas_toolbar):
+    if canvas.children:
+        for child in canvas.winfo_children():
+            child.destroy()
+    if canvas_toolbar.children:
+        for child in canvas_toolbar.winfo_children():
+            child.destroy()
+    figure_canvas_agg = FigureCanvasTkAgg(fig, master=canvas)
+    figure_canvas_agg.draw()
+    toolbar = Toolbar(figure_canvas_agg, canvas_toolbar)
+    toolbar.update()
+    figure_canvas_agg.get_tk_widget().pack(side='right', fill='both', expand=1)
+
+
+class Toolbar(NavigationToolbar2Tk):
+    def __init__(self, *args, **kwargs):
+        super(Toolbar, self).__init__(*args, **kwargs)
 
 
 def main():
@@ -162,7 +186,7 @@ def main():
                     window["-ASSIGNED-ROI-DROP-DOWN-"].update(
                         values=roi_identifier, disabled=False)
                     window["-VIEW-ASSIGNED-ROI-"].update(disabled=False)
-                
+
                 if unassigned_rois:
                     roi_identifier = [
                         f"Type: {val[0].descriptor['type']}, ID: {val[0].descriptor['pile_nr']}" for val in unassigned_rois.values()]
@@ -170,29 +194,32 @@ def main():
                         values=roi_identifier, disabled=False)
                     window["-ASIGN-UNASSIGNED-ROI-"].update(disabled=False)
 
-
-                # get_raster_query = text(
-                #     "SELECT ST_AsGDALRaster(ST_Union(ST_Clip(r.rast, p.polygon)), 'GTIFF') FROM ortho_raster_indexed r, piles p WHERE ST_Intersects(r.rast, p.polygon)")
-                # results = session.execute(get_raster_query).one()
-
-                get_raster_query = text(
-                                    "SELECT ST_AsGDALRaster(ST_Union(r.rast), 'JPEG', ARRAY['QUALITY=50']) FROM ortho_raster_indexed r"
-                                    )
-                results = session.execute(get_raster_query).one()
-                in_mem_file = MemoryFile(bytes(results[0]))
-                in_mem_raster = in_mem_file.open()
-                test = np.array(in_mem_raster.read()).T
-                # show(in_mem_raster) # <- in Geo Coords
-
-                # fig = matplotlib.figure.Figure(figsize=(5, 4), dpi=100)
-                fig = plt.figure()
-                plt.imshow(test)
-                draw_figure(window["-CANVAS-"].TKCanvas, fig)
-
-                # pyplot.imshow(test)   # <- w/ correct color coding
-
             except:
                 True
+
+        elif event == "-VIEW-ASSIGNED-ROI-":
+            if assigned_rois:
+
+                chosen_pile = values["-ASSIGNED-ROI-DROP-DOWN-"]
+                pattern = r'ID:\s*(\d+)'
+                match = re.search(pattern, chosen_pile)
+                if match:
+                    id = int(match.group(1))
+                    if id in assigned_rois.keys():
+                        get_raster_query = text(f"SELECT p.pile_nr, ST_AsGDALRaster(ST_Union(ST_Clip(r.rast, p.polygon)), 'GTIFF') AS raster \
+                                                FROM ortho_raster_indexed r, piles p \
+                                                WHERE ST_Intersects(r.rast, p.polygon) AND p.pile_nr = {id} \
+                                                GROUP BY p.pile_nr")
+                        result = session.execute(get_raster_query).one()
+                        in_mem_file = MemoryFile(bytes(result.raster))
+                        in_mem_raster = in_mem_file.open()
+                        plt.ion()
+                        plt.figure()
+                        fig = plt.gcf()
+                        fig.clear()
+                        pile_img = np.array(in_mem_raster.read()).T
+                        plt.imshow(pile_img)
+                        draw_figure(window["-CANVAS-"].TKCanvas, fig)
 
     window.close()
 
