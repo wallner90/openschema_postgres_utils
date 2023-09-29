@@ -1,3 +1,6 @@
+# ENV NVIDIA_VISIBLE_DEVICES all
+# ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics
+
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.234.0/containers/cpp/.devcontainer/base.Dockerfile
 
 # [Choice] Debian / Ubuntu version (use Debian 11, Ubuntu 18.04/22.04 on local arm64/Apple Silicon): debian-11, debian-10, ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
@@ -36,5 +39,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get autoremove -y -qq \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install SQLAlchemy GeoAlchemy2 GeoPandas fiona pyproj rtree shapely msgpack-python tqdm pyclothoids scipy pysimplegui open3d rasterio protobuf==3.20.0
+RUN pip3 install SQLAlchemy GeoAlchemy2 GeoPandas fiona pyproj rtree shapely msgpack-python tqdm pyclothoids scipy pysimplegui open3d rasterio laspy pyvista open3d protobuf==3.20.0
 

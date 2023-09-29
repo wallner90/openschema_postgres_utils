@@ -22,6 +22,9 @@ import re
 from datetime import datetime
 
 from sqlalchemy.dialects.postgresql import JSON
+from geoalchemy2.shape import to_shape
+
+from shapely.geometry import MultiPoint
 
 from model import *
 
@@ -172,6 +175,55 @@ def main():
             if not active_schema:
                 continue
             try:
+                # get all unassigned landmarks
+                unassigned_lms = session.query(Landmark).filter(
+                    Landmark.keypoints == None).filter(
+                    Landmark.semantic_geometries == None).all()
+                #unassigned_lms_point_dict = {to_shape(elem.position).xy : elem for elem in unassigned_lms}
+                points = [to_shape(landmark.position) for landmark in unassigned_lms]
+                if points:
+                    ts = datetime.utcnow()
+                    map = Map(name=f'qgis_roi_editor_map_{ts}',
+                            description={"T_global": [
+                                0.0]*12, "AuthorithyID": "EPSG:25833", "CRS": "ETRS89 / UTM zone 33N"},
+                            created_at=ts, updated_at=ts)
+                    pg = PoseGraph(name="Virtual roi pose graph for qgis import", map=map,
+                                description={})
+                    pose = Pose(position=f"POINTZ({0} {0} {0})", posegraph=pg)
+                    semantic_observation = SemanticObservation(
+                        pose=pose, algorithm="qgis_points", created_at=ts, updated_at=ts,
+                        algorithm_settings={"qgis_points":
+                                            {"version": "0.1",
+                                            }})
+                    
+                    sem_geom = SemanticPolygon(description={
+                                   'type': 'pile', 'pile_nr': 5, 'description': 'A pile in Kieswerk Asten.'})
+                    connections = []
+                    sem_geoms = []
+                    kps = []
+                    lms = []
+
+                    convex_hull_pts = list(MultiPoint(points).convex_hull.exterior.coords)
+                    for idx, convex_hull_pt in enumerate(convex_hull_pts):
+                        lm = Landmark(
+                            position=f"POINTZ({convex_hull_pt[0]} {convex_hull_pt[1]} {convex_hull_pt[2]})",
+                            descriptor={"type": "pile"})
+                        lms.append(lm)
+                        kps.append(SemanticKeypoint(
+                        observation=semantic_observation, landmark=lm))
+                        connection = ManyLandmarkHasManySemanticGeometry(
+                            landmark=lm,
+                            order_idx=idx)
+                        sem_geom.landmarks.append(connection)
+                        connections.append(connection)
+
+                    session.add_all(connections + sem_geoms + kps +
+                                    [map, pg, pose, semantic_observation])                    
+
+                    for lm in unassigned_lms:
+                        session.delete(lm)
+                    session.commit()
+
                 for obj in session.query(Landmark).filter(text("descriptor->>'type' = 'pile'")).all():
                     if obj.semantic_geometries:
                         assigned_rois.setdefault(
