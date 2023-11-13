@@ -1,4 +1,15 @@
+# ⚡⚡⚡ DEPRECATED ⚡⚡⚡ <br><br> New Link: <br> https://github.com/openschema-mapping/openschema_postgres_utils
+
+ <br><br> <br><br> <br><br> <br><br> <br><br>
+
+
+
 # openSCHEMA postgreSQL ORM and Interface Utils
+
+
+
+
+
 
 ## Structure
 ``` text
